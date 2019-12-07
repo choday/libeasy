@@ -4,12 +4,12 @@
 namespace eio
 {
 
-	socket_linux::socket_linux(ebase::executor* event_executor/*=0*/):socket(event_executor)
+	socket_linux::socket_linux(ebase::executor* event_executor/*=0*/):socket_native(event_executor)
 	{
 
 	}
 
-	bool socket_linux::enter_event_listener()
+	bool socket_linux::native_enter_listener()
 	{
 		if(epoll_linux::instance()->add_handle( (int)this->get_handle(),this ) )
 		{
@@ -19,20 +19,22 @@ namespace eio
 		return false;
 	}
 
-	void socket_linux::leave_event_listener()
+	void socket_linux::native_leave_listener()
 	{
 		if(epoll_linux::instance()->remove_handle( (int)this->get_handle() ) )
 		{
 			this->release();
 		}
 	}
-    bool socket_linux::want_read()
+    void socket_linux::native_io_flags_changed()
     {
 
-        return true;
     }
-    bool socket_linux::want_write()
+    void socket_linux::native_want_read()
     {
-        return true;
+
+    }
+    void socket_linux::native_want_write()
+    {
     }
 }

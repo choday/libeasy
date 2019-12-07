@@ -110,7 +110,7 @@ namespace eio
 
     bool ssl_socket::is_opened()
     {
-        return SSL_is_init_finished(_ssl);
+        return 0!=SSL_is_init_finished(_ssl);
     }
 
     bool ssl_socket::send(const ebase::buffer& data)
@@ -172,7 +172,7 @@ namespace eio
             char* p = ERR_error_string(code,buffer );
             if(!p)
             {
-                snprintf(buffer,256,"unkown openssl error code:%u",code);
+                snprintf(buffer,256,"unkown openssl error code:%lu",code);
                 p=buffer;
             }
 

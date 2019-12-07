@@ -10,7 +10,7 @@ else
 work_dir = $(shell pwd)
 endif
 
-LOCAL_C_INCLUDES=$(NDK_ROOT)/home/include
+THIRD_PARTY_C_INCLUDES=$(NDK_ROOT)/home/include
 LOCAL_LDFLAGS=-L$(NDK_ROOT)/home/lib/$(TARGET_ARCH)
 
 out_dir		:= $(work_dir)/out/android
@@ -30,6 +30,7 @@ include $(CLEAR_VARS)
 LOCAL_MODULE    := elib_static
 LOCAL_SRC_FILES :=  $(elib_src)
 #LOCAL_LDLIBS	:=-llog
+LOCAL_C_INCLUDES=$(THIRD_PARTY_C_INCLUDES)
 LOCAL_EXPORT_C_INCLUDE_DIRS:=
 LOCAL_CPP_FEATURES := rtti
 include $(BUILD_STATIC_LIBRARY)
@@ -69,7 +70,7 @@ NDK_APP_DST_DIR := $(work_dir)/out/android/libs/$(TARGET_ARCH_ABI)
 LOCAL_MODULE    := elib_unittest
 LOCAL_LDLIBS	+= -pthread
 LOCAL_SRC_FILES := $(unittest_src) 
-LOCAL_C_INCLUDES+= $(work_dir)/src
+LOCAL_C_INCLUDES+= $(work_dir)/src $(THIRD_PARTY_C_INCLUDES)
 LOCAL_STATIC_LIBRARIES += elib_static libgtest libgtest_main
 LOCAL_CPP_FEATURES := rtti
 include $(BUILD_EXECUTABLE)

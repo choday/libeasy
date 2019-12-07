@@ -249,7 +249,7 @@ void test_file_pointer()
 	ASSERT_TRUE(file.valid());
 
 
-	int file_size = strlen(filename);
+	int file_size = (int)strlen(filename);
 	ASSERT_EQ(file->size(),file_size );
 
 

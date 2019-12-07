@@ -63,8 +63,8 @@ namespace eio
         virtual bool            recv( ebase::buffer& data ) override;
         virtual bool            sendto( const ebase::buffer& data,const socket_address& to_address ) override;
         virtual bool            recvfrom( ebase::buffer& data,socket_address* from_address=0 ) override;
-        virtual int             get_error_code() const;
-        virtual const char*     get_error_message() const;
+        virtual int             get_error_code() const override;
+        virtual const char*     get_error_message() const override;
 //socket_io end
 
 		bool					is_invalid_handle() const;

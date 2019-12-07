@@ -12,16 +12,7 @@ namespace ehttp
 
     }
 
-    bool http_connection::open(const ebase::string& url)
-    {
-
-        return true;
-    }
-
-    void http_connection::close()
-    {
-
-    }
+   
 
 
 

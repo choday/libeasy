@@ -22,8 +22,8 @@ namespace eio
         virtual bool                    is_opened() override;
         virtual bool                    send( const ebase::buffer& data ) override;
         virtual bool                    recv( ebase::buffer& data ) override;
-        virtual int                     get_error_code() const;
-        virtual const char*             get_error_message() const;
+        virtual int                     get_error_code() const override;
+        virtual const char*             get_error_message() const override;
     private:
         ebase::ref_ptr<ssl_context>     _context;
         SSL *                           _ssl;

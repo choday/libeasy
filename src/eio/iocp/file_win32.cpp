@@ -214,7 +214,7 @@ namespace eio
 		request_win32::_iocp_data_* data=(request_win32::_iocp_data_*)ol_params;
 		ebase::ref_ptr<request_win32>	prequest_win32 = (request_win32*)data->_request_win32;
 
-		int error_code = prequest_win32->iocp_data.Internal;
+		int error_code = (int)prequest_win32->iocp_data.Internal;
 
 		prequest_win32->io_size = complete_bytes;
 		if(prequest_win32->operate == file::request::operate_read)prequest_win32->io_data.resize(complete_bytes,true);

@@ -1,0 +1,11 @@
+win32下编译方法
+
+注意mingw路径
+
+export ANDROID_NDK_HOME=/e/soft/android/android-sdk-windows/ndk-bundle
+export PATH=/e/soft/android/android-sdk-windows/ndk-bundle/toolchains/llvm/prebuilt/windows-x86_64/bin:$PATH
+
+./Configure -D__ANDROID_API__=29 --prefix=/e/soft/android/android-sdk-windows/ndk-bundle/home android-arm64 
+./Configure -D__ANDROID_API__=29 --prefix=/e/soft/android/android-sdk-windows/ndk-bundle/home android-arm
+./Configure -D__ANDROID_API__=29 --prefix=/e/soft/android/android-sdk-windows/ndk-bundle/home android-x86
+./Configure -D__ANDROID_API__=29 --prefix=/e/soft/android/android-sdk-windows/ndk-bundle/home android-x86_64

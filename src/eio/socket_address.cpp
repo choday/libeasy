@@ -176,7 +176,7 @@ namespace eio
 
 	bool socket_address::parse_ip_port(const char* ip,int size /*= 0*/)
 	{
-		if(0==size)size=strlen(ip);
+		if(0==size)size=(int)strlen(ip);
 		const char* port = ip + size-1;
 		for( ;port>=ip;--port )
 		{
@@ -385,7 +385,7 @@ namespace eio
 	bool socket_address::inet_pton6(unsigned char* ipv6_16bytes,const char* ip_str,int size /*= 0*/)
 	{
 		const char*			src = ip_str;
-		if(0==size)size=strlen(src);
+		if(0==size)size=(int)strlen(src);
 
 		static const char	xdigits_l[] = "0123456789abcdef",
 							xdigits_u[] = "0123456789ABCDEF";

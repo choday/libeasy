@@ -1,5 +1,5 @@
 #include "../ebase/thread_loop.hpp"
-#include "../eio/socket.hpp"
+#include "../eio/socket_io.hpp"
 #include "../examples/echo_server.hpp"
 
 int main()

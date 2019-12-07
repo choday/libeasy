@@ -13,7 +13,7 @@ namespace eio
 		socketpair_for_event[0] = -1;
 		socketpair_for_event[1] = -1;
 				
-		socket::socket_udp_pair(socketpair_for_event);
+		socket_native::socket_udp_pair(socketpair_for_event);
 
 		_dispath_event_fd = socketpair_for_event[0];
 
@@ -22,7 +22,7 @@ namespace eio
 	epoll_linux::~epoll_linux()
 	{
 
-		socket::close_udp_pair(socketpair_for_event);
+        socket_native::close_udp_pair(socketpair_for_event);
 		socketpair_for_event[0] = -1;
 		socketpair_for_event[1] = -1;
 		_dispath_event_fd = -1;
@@ -38,7 +38,7 @@ namespace eio
 	
 		while( ::recv( _dispath_event_fd,temp,16 ,0 ) >= 0){}
 
-		int error = socket::get_last_error();
+		int error = socket_native::get_last_error();
 
 		return;
 	}
@@ -120,21 +120,21 @@ namespace eio
 
 		if( EPOLLOUT & events )
 		{
-			p->notify_writeable();
+			p->process_writeable();
 		}
 
 		if( EPOLLIN & events )
 		{
-			p->notify_readable();
+			p->process_readable();
 		}
 
 		if( EPOLLERR & events )
 		{
-			p->notify_error(true);
+			p->process_error(true);
 		}
 		if( EPOLLHUP & events )
 		{
-			p->notify_closed();
+			p->process_closed();
 
 		}
     }

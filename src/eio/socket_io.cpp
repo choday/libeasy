@@ -104,7 +104,7 @@ namespace eio
 
     const char* socket_io::get_error_message() const
     {
-        if(!_next_socket_io.valid())return false;
+        if(!_next_socket_io.valid())return "_next_socket_io is invalid";
         return _next_socket_io->get_error_message();
     }
 

@@ -1,0 +1,21 @@
+安装perl,nasm并确保写入path环境变量
+
+openssl 1.1.1之前的版本
+perl configure VC-WIN32 --prefix=E:/soft/prebuild
+call ms/do_nasm.bat
+nmake /f ms/ntdll.mak
+nmake /f ms/ntdll.mak test
+nmake /f ms/ntdll.mak install
+
+
+之后的版本
+可选VC-WIN32 VC-WIN64A VC-WIN64I  
+
+VC-WIN64A为常用64位系统 ,VC-WIN64I对应的是IA64系统
+debug-VC-WIN32 为debug版本
+no-shared为编译static版本
+
+perl configure VC-WIN64A --prefix=E:/soft/prebuild --openssldir=E:/soft/prebuild 
+nmake
+
+

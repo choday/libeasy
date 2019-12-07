@@ -25,7 +25,7 @@ namespace eio
 		socket_rw_manager_posix*	_socket_rw_manager;
 
 	private://for ebase::ref_tree::entry
-		virtual int		compare_rbtree_entry( ebase::ref_tree::entry* left_value );
-		virtual int		compare_rbtree_find_value( void* pfind_value );
+		virtual int		compare_rbtree_entry( ebase::ref_tree::entry* left_value ) override;
+		virtual int		compare_rbtree_find_value( void* pfind_value ) override;
 	};
 };
