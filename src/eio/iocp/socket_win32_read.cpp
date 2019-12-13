@@ -73,8 +73,8 @@ namespace eio
 			this->release();
 		}
 	}
-	
-	int socket_win32::native_recv(ebase::buffer& data)
+
+	int socket_win32::native_recv(void* data,int len)
 	{
 		if( is_invalid_handle() )return -1;
 
@@ -85,18 +85,15 @@ namespace eio
 		DWORD flags = 0;
 		WSABUF wsabuffer={0};
 
-        wsabuffer.buf = (char*)data.resize(0);
-		wsabuffer.len = data.capacity();
+        wsabuffer.buf = (char*)data;
+		wsabuffer.len = len;
 
 		result =::WSARecv(this->_handle,&wsabuffer,1,&completed_bytes,&flags,0,0 );
 		error = ::WSAGetLastError();
 
-        data.resize( completed_bytes );
-
         if(0==result)
         {
-            if(data.capacity()&&0==completed_bytes)return 0;
-            return 1;
+            return completed_bytes;
         }else if( WSAEWOULDBLOCK==error )
         {
             return 0;
@@ -129,7 +126,7 @@ namespace eio
 
 		if( is_invalid_handle() )return -1;
 
-		if(fetch_read_cache(data,from_address))return 1;
+		if(fetch_read_cache(data,from_address))return data.size();
 	
 		int result = 0;
 		DWORD error = 0;
@@ -148,11 +145,12 @@ namespace eio
 		result =::WSARecvFrom( this->_handle,&wsabuffer,1,&completed_bytes,&flags,address,&address_size,0,0 );
 		error = ::WSAGetLastError();
 
+        data.resize( completed_bytes );
+
 		if(0==result)
 		{
-			data.resize( completed_bytes );
 			if(from_address)from_address->assign( sssaddress );
-			return 1;
+			return completed_bytes;
 		}else if(WSAEWOULDBLOCK==error)
         {
             return 0;

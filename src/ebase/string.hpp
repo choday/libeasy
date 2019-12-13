@@ -34,7 +34,11 @@ namespace ebase
 		string&		append( const char* data,int size = 0);
 		
 		int			compare(const char* data,int size = 0) const;
+		int			compare_ignore_case(const char* data,int size = 0) const;
 		
+        int			compare_size(const char* data,int compare_chars ) const;
+        int			compare_size_ignore_case(const char* data,int compare_chars ) const;
+
 		string&		make_upper();
 		string&		make_lower();
 

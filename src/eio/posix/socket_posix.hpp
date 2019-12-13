@@ -9,7 +9,7 @@ namespace eio
 
 	class socket_rw_manager_posix;
 
-	class socket_posix:public socket_native,public ebase::ref_list::entry,public ebase::ref_tree::entry
+	class socket_posix:public socket_native
 	{
 	public:
 		socket_posix(ebase::executor* event_executor=0,bool use_select=true);
@@ -20,12 +20,10 @@ namespace eio
 
 		virtual void            native_io_flags_changed() override;
 
+        ebase::ref_list::entry  list_entry;
+        ebase::ref_tree::entry  tree_entry;
 		friend class poll_posix;
 	private:
 		socket_rw_manager_posix*	_socket_rw_manager;
-
-	private://for ebase::ref_tree::entry
-		virtual int		compare_rbtree_entry( ebase::ref_tree::entry* left_value ) override;
-		virtual int		compare_rbtree_find_value( void* pfind_value ) override;
 	};
 };

@@ -11,12 +11,12 @@ namespace eio
 				
 		socket_native::socket_udp_pair(socketpair_for_event);
 
+        _fd_to_socket_map.set_entry_compare(this);
 		_dispath_event_fd = socketpair_for_event[0];
 	}
 
 	socket_rw_manager_posix::~socket_rw_manager_posix()
-	{
-		
+    {
 		socket_native::close_udp_pair(socketpair_for_event);
 		socketpair_for_event[0] = -1;
 		socketpair_for_event[1] = -1;
@@ -36,8 +36,8 @@ namespace eio
 	{
 		ebase::mutex_lock_scope(&this->lock_alllist);
 
-		_fd_to_socket_map.insert_equal( ptr );
-		bool result = _manager_list.push_back( ptr );
+		_fd_to_socket_map.insert_equal( &ptr->tree_entry );
+		bool result = _manager_list.push_back( &ptr->list_entry );
         return result;
 	}
 
@@ -45,8 +45,8 @@ namespace eio
 	{
 		ebase::mutex_lock_scope(&this->lock_alllist);
 
-		_fd_to_socket_map.remove(ptr);
-		return _manager_list.remove( ptr );
+		_fd_to_socket_map.remove(&ptr->tree_entry);
+		return _manager_list.remove( &ptr->list_entry );
 	}
 
 
@@ -62,8 +62,7 @@ namespace eio
             return 0;
         }
 
-		ebase::ref_ptr<socket_posix> result = entry->get_holder<socket_posix>();
-		return result.get();
+		return entry->get_holder<socket_posix>();
 	}
 
 	void socket_rw_manager_posix::need_dispath()
@@ -86,4 +85,25 @@ namespace eio
 
 		return;
 	}
+
+    int socket_rw_manager_posix::compare_rbtree_entry(ebase::ref_tree::entry* left_value,ebase::ref_tree::entry* right_value)
+    {
+        socket_posix* left = left_value->get_holder<socket_posix>();
+        socket_posix* right = right_value->get_holder<socket_posix>();
+
+		if( left->get_handle()<right->get_handle() )return -1;
+		if( left->get_handle()>right->get_handle() )return 1;
+		return 0;
+    }
+
+    int socket_rw_manager_posix::compare_rbtree_find_value(void* pfind_value,ebase::ref_tree::entry* right_value)
+    {
+        SOCKET value = *(SOCKET*)&pfind_value;
+        socket_posix* right = right_value->get_holder<socket_posix>();
+
+		if( value<right->get_handle() )return -1;
+		if( value>right->get_handle() )return 1;
+		return 0;
+    }
+
 };

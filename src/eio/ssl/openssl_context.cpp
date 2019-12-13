@@ -33,6 +33,8 @@
     case SSL_ERROR_WANT_ACCEPT:
     }
 */
+
+#define HAS_TLS_METHOD  1
 namespace eio
 {
 
@@ -41,19 +43,27 @@ namespace eio
         static bool inited = false;
         if(inited)return;
         inited=true;
-
+#if OPENSSL_VERSION_NUMBER >= 0x10100003L
+        OPENSSL_init_ssl(OPENSSL_INIT_ENGINE_ALL_BUILTIN| OPENSSL_INIT_LOAD_CONFIG, NULL);
+#else
+        OPENSSL_config(NULL);
         SSL_library_init();
         OpenSSL_add_all_algorithms();
         SSL_load_error_strings();
-        ERR_load_ERR_strings();
-        ERR_load_BIO_strings();
-        ERR_load_crypto_strings();
+#endif
+        
     }
 
     openssl_context::openssl_context()
     {
+        
         init_openssl_library();
+#if OPENSSL_VERSION_NUMBER>0x10101000L
+        ctx = SSL_CTX_new(TLS_method());
+#else
         ctx = SSL_CTX_new(TLSv1_2_method());
+#endif
+        //SSL_CTX_clear_mode(ctx, SSL_MODE_AUTO_RETRY);
     }
 
     openssl_context::~openssl_context()

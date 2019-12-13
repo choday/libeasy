@@ -27,13 +27,14 @@ namespace ebase
 		int 		        clear();
         inline int			size() const{return _count;}
 
-		class entry
+
+        class entry
 		{
 		public:
             entry();
 
-			virtual int		    compare_rbtree_entry( entry* left_value ) = 0;
-			virtual int		    compare_rbtree_find_value(void* pfind_value ) = 0;
+            virtual int		    compare_rbtree_entry( entry* left_value ) {return 0;};
+            virtual int		    compare_rbtree_find_value(void* pfind_value ) {return 0;}
 
             inline void	        set_holder(ref_class_i* holder){this->_holder=holder;}
             inline ref_class_i* get_holder(){return this->_holder;}
@@ -60,10 +61,19 @@ namespace ebase
 			rbtree_entry    _rbtree_entry;
 		};
 
+        class entry_compare
+        {
+        public:
+			virtual int		    compare_rbtree_entry( entry* left_value,entry* right_value ) = 0;
+			virtual int		    compare_rbtree_find_value(void* pfind_value,entry* right_value ) = 0;
+        };
+
+        void set_entry_compare(entry_compare* c);
 	private:
 
         rbtree_head     _rbtree_head;
 		int			    _count;
+        entry_compare*  _entry_compare;
 
 		static int compare_rbtree_node(rbtree_head* head, rbtree_entry* e1,rbtree_entry* e2);
 		static int compare_rbtree_find_value(rbtree_head* head,void* pfind_data,rbtree_entry* e2);

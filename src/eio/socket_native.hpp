@@ -6,6 +6,7 @@
 #include "../ebase/atomic.hpp"
 #include "../ebase/allocator.hpp"
 #include "../ebase/event_emitter.hpp"
+#include "../ebase/ref_list.hpp"
 #include "socket_io.hpp"
 #include "name_resolver.hpp"
 
@@ -28,7 +29,7 @@ namespace eio
 	class socket_native;
 	typedef ebase::ref_ptr<socket_native>	socket_native_ptr;
 
-	class socket_native:public socket_io
+    class socket_native:public ebase::ref_class<socket_io>,public ebase::ref_list::entry
 	{
 	public:
 		socket_native(ebase::executor* event_executor=0);
@@ -46,23 +47,25 @@ namespace eio
 		static socket_native_ptr		create_instance(ebase::executor* event_executor=0,int socket_api_type = socket_api_default );
 		
 		virtual bool					init(int af,int type,int protocol);
-        virtual void                    close_after_send();
 		void							set_default_read_buffer_size(int capcity=socket_default_read_buffer_size );
 
 		virtual bool					bind( const socket_address& address );
 		virtual bool					listen(const socket_address& address,int backlog=20);
         virtual socket_native_ptr		accept();
 		virtual socket_native_ptr		attach_accept_handle(SOCKET s);
+        virtual int                     sendto( const ebase::buffer& data,const socket_address& to_address );
+        virtual int                     recvfrom( ebase::buffer& data,socket_address* from_address=0 );
 
 //socket_io start
 		virtual bool			open( const ebase::string& host,const ebase::string& port_or_service ) override;
 		virtual bool			open(const socket_address& address ) override;
         virtual bool            is_opened() override;
-        virtual void            close() override;
-        virtual bool            send( const ebase::buffer& data ) override;
-        virtual bool            recv( ebase::buffer& data ) override;
-        virtual bool            sendto( const ebase::buffer& data,const socket_address& to_address ) override;
-        virtual bool            recvfrom( ebase::buffer& data,socket_address* from_address=0 ) override;
+        virtual void            close(bool delay=true) override;
+        virtual int             write( const void* data,int len ) override;
+        virtual int             read( void* data,int len ) override;
+        virtual int             write_buffer( const ebase::buffer& data ) override;
+        virtual int             read_buffer( ebase::buffer& data ) override;
+        virtual int             get_nread_size() const override;
         virtual int             get_error_code() const override;
         virtual const char*     get_error_message() const override;
 //socket_io end
@@ -86,7 +89,6 @@ namespace eio
 		int						get_socket_error_code();
 		//int					get_connect_time();
 		int						get_socket_type();
-		int						get_nread_size();//出错返回-1
 		static int				get_last_error();
 
         static int	            socket_udp_pair( int sv[2] );//这里与linux有区别，输出 两个socket都是nonblock模式,简单的udp socket对
@@ -102,8 +104,8 @@ namespace eio
         //native io,成功返回1，出错返回-1,阻塞返回0
 		virtual	SOCKET		    native_create_socket(int af,int type,int protocol);
         virtual int			    native_connect(const socket_address& address );
-        virtual int             native_send( const ebase::buffer& data );
-        virtual int             native_recv( ebase::buffer& data );
+        virtual int             native_send( const void* data,int len );
+        virtual int             native_recv( void* data,int len );
         virtual int             native_sendto( const ebase::buffer& data,const socket_address& to_address );
         virtual int             native_recvfrom( ebase::buffer& data,socket_address* from_address=0 );
 
@@ -120,6 +122,13 @@ namespace eio
 
 		void					process_readable();
 		void					process_writeable();//设置status_flags_connectting后，将调用on_connected，否则 调用notify_writeable
+
+		void			notify_error(ref_class_i* fire_from_handle);
+		void			notify_opened(ref_class_i* fire_from_handle);
+		void			notify_closed(ref_class_i* fire_from_handle);
+
+		void			notify_readable(ref_class_i* fire_from_handle);
+		void			notify_writeable(ref_class_i* fire_from_handle);
 
 		enum
 		{

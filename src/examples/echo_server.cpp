@@ -51,9 +51,9 @@ void echo_server::on_read(ref_class_i* handle)
 	eio::socket_native* p = (eio::socket_native*)handle;
 
 	ebase::buffer b;
-	while( p->recv(b) )
+	while( p->read_buffer(b) )
 	{
-		p->send(b);
+		p->write_buffer(b);
 	}
 }
 

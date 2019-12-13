@@ -39,7 +39,7 @@ void connect_multi::on_read(ref_class_i* handle)
 
 	ebase::buffer b;
 
-	while( p->recv(b) )
+	while( p->read_buffer(b)>0 )
 	{
 
 	}
@@ -85,7 +85,7 @@ void connect_multi::on_connect(ref_class_i* handle)
 	{
 
 		b.assign("test",4);
-		p->send(b);
+		p->write_buffer(b);
 
 		eio::socket_address addr=p->get_local_address();
 		printf("connect local:%d %s %d\n",p->get_handle(),addr.to_string().c_str(),current_connections );

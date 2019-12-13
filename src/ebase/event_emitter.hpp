@@ -28,14 +28,16 @@ namespace ebase
 		inline void                     set_function( void (class_name::*function)(ref_class_i* fire_from_handle),class_name* object)
         {
             this->_function.set((void**)&function,object,object);
+            if(_has_event)this->fire();
         }
-		void                            set_function(  void (*function)(ref_class_i* fire_from_handle) ){this->_function.set((void**)&function,0,0);}
+		void                            set_function(  void (*function)(ref_class_i* fire_from_handle) ){this->_function.set((void**)&function,0,0);if(_has_event)this->fire();}
 		void                            clear();
 		bool                            fire();
 
 	protected:
 		virtual void	                run();
 
+        bool                _has_event;
         ref_function        _function;
 		ref_class_i*		_event_source;
 		executor*			_event_executor;

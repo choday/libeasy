@@ -3,15 +3,24 @@ namespace ebase
 {
     int ref_tree::compare_rbtree_node(rbtree_head* head,rbtree_entry* e1,rbtree_entry* e2)
     {
+        ref_tree* pthis = (ref_tree*) ((char*)head-(char*)&((ref_tree*)0)->_rbtree_head);
+
+        if(pthis->_entry_compare)return pthis->_entry_compare->compare_rbtree_entry(entry::rbtree_entry2entry(e1),entry::rbtree_entry2entry(e2));
+        
+
         return entry::rbtree_entry2entry(e2)->compare_rbtree_entry( entry::rbtree_entry2entry(e1) );
     }
 
     int ref_tree::compare_rbtree_find_value(rbtree_head* head,void* pfind_data,rbtree_entry* e2)
     {
+        ref_tree* pthis = (ref_tree*) ((char*)head-(char*)&((ref_tree*)0)->_rbtree_head);
+
+        if(pthis->_entry_compare)return pthis->_entry_compare->compare_rbtree_find_value( pfind_data,entry::rbtree_entry2entry(e2));
+        
         return entry::rbtree_entry2entry(e2)->compare_rbtree_find_value( pfind_data );
     }
 
-	ref_tree::ref_tree()
+    ref_tree::ref_tree():_entry_compare(0)
 	{
 		_rbtree_head.rbh_root = 0;
         _rbtree_head.compare_entry = &ref_tree::compare_rbtree_node;
@@ -123,11 +132,17 @@ namespace ebase
 	}
 
  
+    void ref_tree::set_entry_compare(entry_compare* c)
+    {
+        _entry_compare = c;
+    }
+
     ref_tree::entry::entry()
     {
         _tree_host=0;
         _holder = 0;
     }
+
 
     void ref_tree::entry::on_rbtree_insert(ref_tree* tree)
     {

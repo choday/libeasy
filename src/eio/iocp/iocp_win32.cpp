@@ -44,10 +44,11 @@ namespace eio
 
 	iocp_win32* iocp_win32::instance()
 	{
+
+
 		if(iocp_win32::_current)return iocp_win32::_current;
 		
-        global_iocp_context.start(1);
-
+        global_iocp_context.start(1);        
         _current=&global_iocp_context;
 
 		return iocp_win32::_current;

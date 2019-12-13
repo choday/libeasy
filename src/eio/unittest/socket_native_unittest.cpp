@@ -12,7 +12,6 @@ TEST(thread_loop,join)
 {
 	int		memcount = ebase::allocator::get_allocated_count();
 
-
     eio::get_network_platform_loop()->start();
     eio::get_network_poll_loop()->start();
 

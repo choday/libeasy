@@ -6,7 +6,7 @@ namespace ebase
 	{
 		on_drain.set_event_source( this );
 		on_error.set_event_source( this );
-		private_on_want_write.set_event_source( this );
+		private_on_want_pop_buffer.set_event_source( this );
 	}
 
 	void stream_writeable::set_event_executor(executor* event_executor)
@@ -15,20 +15,23 @@ namespace ebase
 		on_error.set_event_executor( event_executor );
 	}
 
-	bool stream_writeable::write(const buffer& buffer,bool _flush)
+	bool stream_writeable::write(const buffer& buffer,bool flush_now)
 	{
         if(_is_end)return false;
+
 		_buffer_list.lock();
 		_buffer_list.push_back(buffer);
 		_buffer_list.unlock();
 
-		if(!_flush)return true;
-		return this->flush();
+        if(flush_now)this->private_on_want_pop_buffer.fire();
+
+		return true;
 	}
 
 	bool stream_writeable::flush()
 	{
-		return this->private_on_want_write.fire();
+		this->private_on_want_pop_buffer.fire();
+        return true;
 	}
 
     ebase::buffer stream_writeable::private_pop_buffer()
@@ -54,7 +57,8 @@ namespace ebase
 	{
 		_is_end=true;
 
-		return flush();
+		this->private_on_want_pop_buffer.fire();
+        return true;
 	}
 
 	bool stream_writeable::is_end()
@@ -62,43 +66,40 @@ namespace ebase
 		return _is_end;
 	}
 
-	int stream_writeable::get_write_cache_size()
-	{
-		return _buffer_list.data_size();
-	}
-
+    int stream_writeable::get_write_cache_size()
+    {
+        return _buffer_list.data_size();
+    }
 
     void stream_writeable::private_set_event_executor(executor* event_executor)
 	{
-		this->private_on_want_write.set_event_executor( event_executor );
+		this->private_on_want_pop_buffer.set_event_executor( event_executor );
 	}
 
-	stream_readable::stream_readable():_is_paused(false),_read_cache_size(4096)
+	stream_readable::stream_readable():_is_paused(false),_read_cache_size(4096),_is_eof(false)
 	{
 		on_data.set_event_source( this );
-		on_error.set_event_source( this );
 		on_end.set_event_source( this );
 
-		private_on_want_read.set_event_source( this );
+		private_on_want_push_buffer.set_event_source( this );
 	}
 
 	void stream_readable::set_event_executor(executor* event_executor)
 	{
 		on_data.set_event_executor( event_executor );
-		on_error.set_event_executor( event_executor );
 		on_end.set_event_executor( event_executor );
 	}
 
-	buffer stream_readable::read()
+    bool stream_readable::read(buffer& data)
 	{
-		buffer bbb;
-        
+        if( !_is_eof && _buffer_list.data_size() == 0 )private_on_want_push_buffer.fire();
+
 		_buffer_list.lock();
-		bbb = _buffer_list.pop_front();
+		data = _buffer_list.pop_front();
 		_buffer_list.unlock();
 
-        if(bbb.size()==0)private_on_want_read.fire();
-		return bbb;
+
+		return data.size()>0;
 	}
 
     void stream_readable::private_push_buffer(const buffer& data)
@@ -110,32 +111,42 @@ namespace ebase
         on_data.fire();
     }
 
-	bool stream_readable::pause()
+    void stream_readable::private_notify_end()
+    {
+        _is_eof=true;
+        on_end.fire();
+    }
+
+    bool stream_readable::pause()
 	{
 		_buffer_list.lock();
 		_is_paused = true;
 		_buffer_list.unlock();
 
-        private_on_want_read.fire();
 		return true;
 	}
 
 	bool stream_readable::resume()
 	{
+        bool result = false;
 		_buffer_list.lock();
 		_is_paused = false;
+        if(_buffer_list.data_size()>=_read_cache_size)result=true;
 		_buffer_list.unlock();
 
-        private_on_want_read.fire();
+        if(result)return false;
+        private_on_want_push_buffer.fire();
 		return true;
 	}
 
 	bool stream_readable::is_paused()
 	{
+        if(_is_eof)return true;
+
 		bool result = false;
 		_buffer_list.lock();
 		result = _is_paused;
-        if(_buffer_list.data_size()>=_read_cache_size)result=false;
+        if(_buffer_list.data_size()>=_read_cache_size)result=true;
 		_buffer_list.unlock();
 
 		return result;
@@ -148,14 +159,14 @@ namespace ebase
 	}
 
 
-    int stream_readable::get_read_cache_size()
+    int stream_readable::get_nread_size()
     {
         return _buffer_list.data_size();
     }
 
     void stream_readable::private_set_event_executor(executor* event_executor)
 	{
-		private_on_want_read.set_event_executor(event_executor);
+		private_on_want_push_buffer.set_event_executor(event_executor);
 	}
 
     stream::stream()
@@ -177,25 +188,34 @@ namespace ebase
         stream_writeable::private_set_event_executor(event_executor);
     }
 
-    void stream::private_notify_error(int code)
+    void stream::private_notify_error(int code,const char* msg)
     {
-        this->error.set_system_error(code);
-        stream_readable::error.set_system_error(code);
-        stream_writeable::error.set_system_error(code);
+        assert(this->error.code);
+        if(this->error.code)return;
 
-        this->on_error.fire();
-        stream_readable::on_error.fire();
+        if(msg)
+        {
+            this->error.set_user_error(code,msg );
+        }else
+        {
+            this->error.set_system_error(code);
+        }
+        
+        stream_readable::error=this->error;
+        stream_writeable::error=this->error;
+
         stream_writeable::on_error.fire();
     }
 
     void stream::private_notify_error(const ebase::error& e)
     {
-        this->error = e;
-        stream_readable::error=e;
-        stream_writeable::error=e;
+        assert(this->error.code);
+        if(this->error.code)return;
 
-        this->on_error.fire();
-        stream_readable::on_error.fire();
+        this->error = e;
+        stream_readable::error=this->error;
+        stream_writeable::error=this->error;
+
         stream_writeable::on_error.fire();
     }
 

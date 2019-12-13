@@ -15,7 +15,7 @@ namespace eio
 
 
 	class socket_posix;
-	class socket_rw_manager_posix:public ebase::thread_loop
+    class socket_rw_manager_posix:public ebase::thread_loop,public ebase::ref_tree::entry_compare
 	{
 	public:
 		socket_rw_manager_posix();
@@ -40,6 +40,8 @@ namespace eio
 		void		    clear_socket_pair_event();
 
 	private:
+		virtual int		    compare_rbtree_entry( ebase::ref_tree::entry* left_value,ebase::ref_tree::entry* right_value ) override;
+		virtual int		    compare_rbtree_find_value(void* pfind_value,ebase::ref_tree::entry* right_value ) override;
 		int			    socketpair_for_event[2];//socketpair_for_event[0]用于接收消息
 	};
 };

@@ -1,0 +1,14 @@
+zlib-1.2.11
+http://www.zlib.net/
+
+
+googletest-1.7.0
+https://github.com/google/googletest
+
+
+http-parser
+https://github.com/nodejs/http-parser
+
+
+openssl-1.1.1
+https://www.openssl.org/

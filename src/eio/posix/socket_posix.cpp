@@ -22,8 +22,8 @@ namespace eio
 {
 	socket_posix::socket_posix(ebase::executor* event_executor/*=0*/,bool use_select):socket_native(event_executor),_socket_rw_manager(0)
 	{
-        ebase::ref_tree::entry::set_holder(this);
-        ebase::ref_list::entry::set_holder(this);
+        list_entry.set_holder(this);
+        tree_entry.set_holder(this);
 		if(use_select)
 		{
 			_socket_rw_manager = select_posix::instance();
@@ -54,20 +54,5 @@ namespace eio
         _socket_rw_manager->need_dispath();
     }
 
-	int socket_posix::compare_rbtree_entry(ebase::ref_tree::entry* left_value)
-	{
-		socket_posix* p = (socket_posix*)left_value;
-		if( p->_handle<this->_handle )return -1;
-		if( p->_handle>this->_handle )return 1;
-		return 0;
-	}
-
-	int socket_posix::compare_rbtree_find_value(void* find_value)
-	{
-        SOCKET s= *(SOCKET*)&find_value;
-		if( s<this->_handle )return -1;
-		if( s>this->_handle )return 1;
-		return 0;
-	}
 
 };

@@ -41,8 +41,12 @@ namespace eio
     {
         if(0==ctx)ctx=new openssl_context();
         _context.reset(ctx);
+        _ssl_connected = false;
+
+        _max_read_cache_size=1024;
+
         this->_ssl = SSL_new(ctx->ctx);
-        SSL_set_verify(this->_ssl,SSL_VERIFY_NONE,0 );//SSL_VERIFY_PEER
+        //SSL_set_verify(this->_ssl,SSL_VERIFY_NONE,0 );//SSL_VERIFY_PEER
         this->_rbio = BIO_new(BIO_s_mem());
         this->_wbio = BIO_new(BIO_s_mem());
         SSL_set_bio(this->_ssl, this->_rbio, this->_wbio);
@@ -58,36 +62,14 @@ namespace eio
     void ssl_socket::ssl_set_connect()
     {
         SSL_set_connect_state(_ssl);
-        this->ssl_do_handshake();
+        this->do_handshake_loop();
     }
 
     void ssl_socket::ssl_set_accept()
     {
         SSL_set_accept_state(_ssl);
-        this->ssl_do_handshake();
+        this->do_handshake_loop();
     }
-
-    bool ssl_socket::ssl_do_handshake()
-    {
-        if(!_next_socket_io.valid() || !_next_socket_io->is_opened() )return false;
-
-        if(SSL_is_init_finished(_ssl))return true;
-
-        int n;
-        do 
-        {
-            n = SSL_do_handshake(_ssl);
-            if(n>0)
-            {
-                socket_io::notify_opened(this);
-                return true;
-            }
-
-        } while (!do_error(n));
-
-        return false;
-    }
-
     bool ssl_socket::ssl_set_host_name(const char* name)
     {
         SSL_set_tlsext_host_name(_ssl,name);
@@ -97,15 +79,15 @@ namespace eio
     bool ssl_socket::open(const ebase::string& host,const ebase::string& port_or_service)
     {
         ssl_set_connect();
-        ssl_set_host_name(host.c_str());
-        return socket_io::open(host,port_or_service);
+ 
+        return socket_io_wrap::open(host,port_or_service);
     }
 
     bool ssl_socket::open(const socket_address& address)
     {
         ssl_set_connect();
 
-        return socket_io::open(address);
+        return socket_io_wrap::open(address);
     }
 
     bool ssl_socket::is_opened()
@@ -113,35 +95,69 @@ namespace eio
         return 0!=SSL_is_init_finished(_ssl);
     }
 
-    bool ssl_socket::send(const ebase::buffer& data)
+
+    int ssl_socket::write_buffer(const ebase::buffer& data)
     {
-        if(!do_flush())return false;
-
-        int n=SSL_write( _ssl,data.data(),data.size() );
-        if( n == data.size())return true;
-
-        do_error(n);
-
-        return false;
+        return write(data.data(),data.size());
     }
 
-    bool ssl_socket::recv(ebase::buffer& outdata)
+    int ssl_socket::write(const void* data,int len)
     {
-        void* p=outdata.resize(1024,false);
 
-        do_fetch();
+        if(!do_flush_loop())return 0;
 
-        int n=SSL_read( _ssl,p,outdata.capacity() );
+        int n=SSL_write( _ssl,data,len );
+        if( n > 0 )
+        {
+            assert(n == len);
+            do_flush_loop();
+            return n;
+        }
+
+        check_error(n);
+        return -1;
+    }
+
+   
+    int ssl_socket::read_buffer(ebase::buffer& outdata)
+    {
+        int capacity = outdata.capacity();
+        if(!capacity)capacity = 1024-ebase::buffer::header_size;
+   
+        char* p = (char*)outdata.alloc(capacity);
+
+        int result = read(p,capacity);
+        if(result>0)
+        {
+            outdata.resize(result,true);
+        }else
+        {
+            outdata.resize(0);
+        }
+
+        return result;
+    }
+
+    int ssl_socket::read(void* data,int len)
+    {
+        this->update_ssl_in();
+
+        int n=SSL_read( _ssl,data,len );
         if(n>0)
         {
-            outdata.resize(n,true);
-            return true;
+            this->update_ssl_in();
+            return n;
         }
-        outdata.resize(0,true);
 
-        do_error(n);
+        check_error(n);
 
-        return false;
+        return -1;
+    }
+
+    int ssl_socket::get_nread_size() const 
+    {
+        if(!_ssl_connected)return 0;
+        return SSL_pending(_ssl);
     }
 
     int ssl_socket::get_error_code() const
@@ -156,91 +172,165 @@ namespace eio
         return _next_socket_io->get_error_message();
     }
 
-    bool ssl_socket::do_error(int n)
+    bool ssl_socket::check_error(int n)
     {
+        if(_error.code)return true;
+
         int result = SSL_get_error(_ssl,n);
-        if(SSL_ERROR_WANT_READ==result)
-        {
-            return do_flush();
-        }else if(SSL_ERROR_WANT_WRITE==result)
-        {
-            return do_fetch();
-        }else
+        if(SSL_ERROR_SYSCALL==result)
         {
             char buffer[256];
-            unsigned long code = ERR_get_error();
-            char* p = ERR_error_string(code,buffer );
-            if(!p)
-            {
-                snprintf(buffer,256,"unkown openssl error code:%lu",code);
-                p=buffer;
-            }
 
-            _error.set_user_error( code,p );
-            socket_io::notify_error(this);
+            unsigned long code = ERR_get_error();
+
+            buffer[0] = 0;
+            ERR_error_string_n(code,buffer,sizeof(buffer) );
+
+            _error.set_user_error( code,buffer );
+            socket_io_wrap::notify_error(this);
+            socket_io_wrap::_next_socket_io->close();
         }
-        return true;
+
+        return (SSL_ERROR_SYSCALL==result);
     }
 
-    bool ssl_socket::do_flush()
+    bool ssl_socket::do_flush_loop()
     {
         if(!_wbio)return true;
 
         int total = 0;
-        do
+        int n;
+
+        do 
         {
-            if( _cache_write_buffer.size() && !this->_next_socket_io->send( _cache_write_buffer ))return false;
+            if( _out_cache.size() )
+            {
+                if(this->_next_socket_io->write_buffer( _out_cache )<=0)return false;
+                total += _out_cache.size();
+            }
 
-            void* p=_cache_write_buffer.resize(1024-ebase::buffer::header_size,false);
-
-            int n = BIO_read( _wbio, p, _cache_write_buffer.capacity() );
+            void* p=_out_cache.alloc(1024-ebase::buffer::header_size);
+            n = BIO_read( _wbio, p, _out_cache.capacity() );
             if(n>0)
             {
-                _cache_write_buffer.resize(n,true);
-                total+=n;
+                _out_cache.resize(n);
             }else
             {
-                _cache_write_buffer.resize(0);
+                _out_cache.resize(0);
             }
-        }while(_cache_write_buffer.size());
+        } while (n>0);
 
         return true;
     }
 
-    bool ssl_socket::do_fetch()
+    bool ssl_socket::do_fetch_once()
     {
-        if(!_rbio)return true;
+        if(!_rbio)return false;
 
-        int total=0;
+        if(!_in_cache.size() )
+        {
+            _in_cache.alloc(1024-ebase::buffer::header_size);
+            if(this->_next_socket_io->read_buffer(_in_cache)<=0)
+            {
+                _in_cache.resize(0);
+                return false;
+            }
+        }
+
+        assert(_in_cache.size());
+
+        int n = BIO_write(_rbio, _in_cache.data(),_in_cache.size());
+        if(n<=0)return false;
+
+        assert(n==_in_cache.size());
+        _in_cache.resize(0);
+
+        return true;
+    }
+
+    bool ssl_socket::do_handshake_loop()
+    {
+        if(!_next_socket_io.valid() || !_next_socket_io->is_opened() )return true;
+        if(SSL_is_init_finished(_ssl))return false;
+        if(_ssl_connected)return false;
+
+        int n;
         do 
         {
-            if(_cache_read_buffer.size() )
+            n = SSL_do_handshake(_ssl);
+            if(n>0)
             {
-                int n = BIO_write(_rbio, _cache_read_buffer.data(),_cache_read_buffer.size());
-                if(n<=0)return false;
-                total+=n;
+                _ssl_connected=true;
+                socket_io_wrap::notify_opened(this);
+                socket_io_wrap::notify_writeable(this);
+                return false;
             }
 
-            _cache_read_buffer.resize(1024-ebase::buffer::header_size);
-        } while(this->_next_socket_io->recv(_cache_read_buffer));
+            int result = SSL_get_error(_ssl,n);
+            if(SSL_ERROR_WANT_READ==result)
+            {
+                if(!do_flush_loop())break;
+            }else if(SSL_ERROR_WANT_WRITE==result)
+            {
+                
+            }else
+            {
+                //出错
+                check_error(n);
+                
+                return false;
+            }
+
+        } while (do_fetch_once());
 
         return true;
     }
 
     void ssl_socket::notify_opened(ref_class_i* fire_from_handle)
     {
-        ssl_do_handshake();
+        do_handshake_loop();
     }
 
     void ssl_socket::notify_readable(ref_class_i* fire_from_handle)
     {
-        do_fetch();
-        if(ssl_do_handshake())socket_io::notify_readable(this);
-    }
+        if(!_ssl_connected)
+        {
+            if( do_handshake_loop() )return;//需要再次调用
+        }
 
+        int pendding_size = update_ssl_in();
+        if(pendding_size>0)socket_io_wrap::notify_readable(this);
+    }
+    
+    int ssl_socket::update_ssl_in()
+    {
+        char buffer[4];
+        int pendding_size=0;
+        do
+        {
+            int n = SSL_peek( _ssl,buffer,4 );
+            if(n>0)
+            {
+                pendding_size = SSL_pending(_ssl);
+                if(pendding_size>_max_read_cache_size)break;
+            }
+
+            if(check_error(n))break;
+
+        }while(do_fetch_once());
+
+        return pendding_size;
+    }
+    
     void ssl_socket::notify_writeable(ref_class_i* fire_from_handle)
     {
-        do_flush();
-        if(ssl_do_handshake())socket_io::notify_writeable(this);
+        bool result = do_flush_loop();
+        if(!_ssl_connected )
+        {
+            do_handshake_loop();
+        }else if(result)
+        {
+            socket_io_wrap::notify_writeable(this);
+        }
     }
 };

@@ -285,7 +285,32 @@ namespace ebase
 		return memcmp( this->data(),data,size );
 	}
 
-	string& string::make_upper()
+    int string::compare_ignore_case(const char* data,int size /*= 0*/) const
+    {
+		if(0==data)return 1;
+		if(0==size)size=(int)strlen(data);
+
+		if(this->size()>size)return 1;
+		if(this->size()<size)return -1;
+
+        return strncmp( this->data(),data,size );
+    }
+
+    int string::compare_size(const char* data,int compare_chars) const
+    {
+        if(0==data)return 1;
+        if(this->size()<compare_chars)return -1;
+        return strncmp( this->data(),data,compare_chars );
+    }
+
+    int string::compare_size_ignore_case(const char* data,int compare_chars) const
+    {
+        if(0==data)return 1;
+        if(this->size()<compare_chars)return -1;
+        return strnicmp( this->data(),data,compare_chars );
+    }
+
+    string& string::make_upper()
 	{
 		int size=this->size();
 		char*	p=this->resize(size,true);

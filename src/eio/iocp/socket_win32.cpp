@@ -43,7 +43,9 @@ namespace eio
 		return s;
 	}
 
-	bool socket_win32::native_enter_listener()
+
+
+    bool socket_win32::native_enter_listener()
 	{
 		return iocp_win32::instance()->assign_handle( (void*)this->_handle,this );
 	}

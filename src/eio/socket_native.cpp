@@ -104,7 +104,7 @@ namespace eio
 		return  INVALID_SOCKET == _handle;
 	}
 
-	void socket_native::close()
+	void socket_native::close(bool delay)
 	{
 		if(status_flags_socket_valid&this->clear_flags(status_flags_socket_valid) )
 		{
@@ -116,14 +116,6 @@ namespace eio
             process_closed();
 		}
 	}
-
-    void socket_native::close_after_send()
-    {
-        if(status_flags_writeable&this->set_flags(status_flags_close_after_send))
-        {
-            this->close();
-        }
-    }
 
     bool socket_native::init(int af,int type,int protocol)
 	{
@@ -183,92 +175,112 @@ namespace eio
 
         return false;
     }
+        
+    int socket_native::write_buffer( const ebase::buffer& data )
+    {
+        return write( data.data(),data.size() );
+    }
 
-	bool socket_native::send(const ebase::buffer& data)
-	{
-        if(this->test_flags(status_flags_writeable))
+    int socket_native::read_buffer( ebase::buffer& data )
+    {
+        int capacity = data.capacity();
+        if(!capacity)capacity = 1024-ebase::buffer::header_size;
+		void* p = data.alloc(capacity);
+
+        int result = read( p,capacity );
+        if( result>0 )
         {
-            int result = native_send(data);
-            if(1==result)return true;
-
-            this->clear_flags(status_flags_writeable);
-
-            if( -1 == result )
-            {
-                this->process_error(true);
-
-            }else if(0==result)
-            {
-                this->native_want_write();
-            }
+            data.resize(result,true);
+        }else
+        {
+            data.resize(0);
         }
-        return false;
+
+        return result;
+    }
+
+    int socket_native::write(const void* data,int len)
+    {
+        if(!this->test_flags(status_flags_writeable))return 0;
+  
+        int result = native_send(data,len);
+        if(result>0)return result;
+        
+        this->clear_flags(status_flags_writeable);
+
+        if( -1 == result )
+        {
+            this->process_error(true);
+
+        }else if(0==result)
+        {
+            this->native_want_write();
+        }
+
+        return result;
+    }
+
+    int socket_native::sendto(const ebase::buffer& data,const socket_address& address)
+	{
+        if(!this->test_flags(status_flags_writeable))return 0;
+        
+        int result = native_sendto(data,address);
+        if(result>0)return result;
+
+        this->clear_flags(status_flags_writeable);
+
+        if( -1 == result )
+        {
+            this->process_error(true);
+
+        }else if(0==result)
+        {
+            this->native_want_write();
+        }
+
+        return result;
 	}
 
-    bool socket_native::sendto(const ebase::buffer& data,const socket_address& address)
+	int socket_native::read(void* data,int len)
 	{
-        if(this->test_flags(status_flags_writeable))
+        if(!this->test_flags(status_flags_readable))return 0;
+
+        int result = native_recv(data,len);
+        if(result>0)return result;
+
+        this->clear_flags(status_flags_readable);
+
+        if( -1 == result )
         {
-            int result = native_sendto(data,address);
-            if(1==result)return true;
+            this->process_error(true);
 
-            this->clear_flags(status_flags_writeable);
-
-            if( -1 == result )
-            {
-                this->process_error(true);
-
-            }else if(0==result)
-            {
-                this->native_want_write();
-            }
+        }else if(0==result)
+        {
+            this->native_want_read();
         }
-        return false;
+        
+        return result;
 	}
 
-	bool socket_native::recv(ebase::buffer& data)
+    int socket_native::recvfrom(ebase::buffer& data,socket_address* from_address/*=0*/)
 	{
-        if(this->test_flags(status_flags_readable))
+        if(!this->test_flags(status_flags_readable))return 0;
+
+        int result = native_recvfrom(data,from_address);
+        if(result>0)return result;
+
+        this->clear_flags(status_flags_readable);
+
+        if( -1 == result )
         {
-            if(0==data.capacity())data.resize( 1024-ebase::buffer::header_size ,false );
-            int result = native_recv(data);
-            if(1==result)return true;
+            this->process_error(true);
 
-            data.resize(0,false);
-
-            this->clear_flags(status_flags_readable);
-
-            if( -1 == result )
-            {
-                this->process_error(true);
-
-            }else if(0==result)
-            {
-                this->native_want_read();
-            }
-        }
-        return false;
-	}
-
-    bool socket_native::recvfrom(ebase::buffer& data,socket_address* from_address/*=0*/)
-	{
-        if(this->test_flags(status_flags_readable))
+        }else if(0==result)
         {
-            int result = native_recvfrom(data,from_address);
-            if(1==result)return true;
-
-            this->clear_flags(status_flags_readable);
-
-            if( -1 == result )
-            {
-                this->process_error(true);
-
-            }else if(0==result)
-            {
-                this->native_want_read();
-            }
+            this->native_want_read();
         }
-        return false;
+        
+        return result;
 	}
 
     bool socket_native::bind(const socket_address& address)
@@ -362,10 +374,10 @@ namespace eio
         return -1;
 	}
 
-    int socket_native::native_send(const ebase::buffer& data)
+    int socket_native::native_send(const void* data,int len)
     {
-		int result = ::send( this->_handle,(const char*)data.data(),data.size(),0 );
-        if(result>=0)return 1;
+		int result = ::send( this->_handle,(const char*)data,len,0 );
+        if(result>=0)return result;
 
 		int error_code = get_last_error();
         if(SOCKET_WOULDBLOCK ==error_code)return 0;
@@ -373,20 +385,13 @@ namespace eio
         return -1;
     }
     
-    int socket_native::native_recv(ebase::buffer& data)
+    int socket_native::native_recv(void* data,int len)
     {
-		void* p = data.resize(0);
 
-		int result = ::recv( this->_handle,(char*)p,data.capacity(),0 );
-		if(result>=0)
-		{
-			data.resize(result,true);
-			return 1;
-		}
-		data.resize(0,false);
+		int result = ::recv( this->_handle,(char*)data,len,0 );
+		if(result>0)return result;
 
 		int error_code = get_last_error();
-
 		if(SOCKET_WOULDBLOCK ==error_code)return 0;
 
 		return -1;
@@ -394,11 +399,11 @@ namespace eio
 
     int socket_native::native_sendto(const ebase::buffer& data,const socket_address& to_address)
     {
+
 		int result = ::sendto( this->_handle,(const char*)data.data(),data.size(),0,(const struct sockaddr*)to_address.data(),to_address.size() );
-		if(result>=0)return 1;
+		if(result>=0)return result;
 
 		int error_code = get_last_error();
-
 		if(SOCKET_WOULDBLOCK ==error_code)return 0;
 
 		return -1;
@@ -406,24 +411,27 @@ namespace eio
 
     int socket_native::native_recvfrom(ebase::buffer& data,socket_address* from_address/*=0 */)
     {
-		socket_address address;
+        int capacity = data.capacity();
+        if(!capacity)capacity = 1024-ebase::buffer::header_size;
+		void* p = data.alloc(capacity);
+
+        int result = 0;
+
+        socket_address address;
         socklen_t fromlen=address.capacity();
+	    result = ::recvfrom( this->_handle,(char*)p,data.capacity(),0,(struct sockaddr*)address.data(),&fromlen );
+        if(result>0)
+        {
+            if(from_address)from_address->assign(address);
+            data.resize(result,true);
+            return result;
+        }
 
-		void* p = data.alloc(_default_read_buffer_size);
-		int result = ::recvfrom( this->_handle,(char*)p,data.capacity(),0,(struct sockaddr*)address.data(),&fromlen );
-		if(result>=0)
-		{
-			if(from_address)from_address->assign(address);
-
-			data.resize(result,true);
-			return 1;
-		}
-		data.resize(0,false);
+        
+        data.resize(0,false);
 
 		int error_code = get_last_error();
-
 		if(SOCKET_WOULDBLOCK ==error_code)return 0;
-
 		return -1;
     }
 
@@ -483,7 +491,7 @@ namespace eio
 		if(this->_status.test(status_flags_socket_valid))
 		{
 			this->_status.clear(status_flags_socket_valid|status_flags_connected|status_flags_writeable);
-			socket_io::notify_closed(this);
+			notify_closed(this);
 		}
 	}
 
@@ -492,7 +500,7 @@ namespace eio
 		if(!self_socket_error)
 		{
 			this->_error.set_system_error(get_last_error());
-            socket_io::notify_error(this);
+            notify_error(this);
 			return ;
 		}
 		
@@ -506,7 +514,7 @@ namespace eio
 		}
 
 		this->_error.set_system_error(error_code);
-		socket_io::notify_error(this);
+		notify_error(this);
 		this->close();
 	}
 
@@ -514,7 +522,7 @@ namespace eio
 	{
         this->_status.clear(socket_status_flags_want_read);
 		this->_status.set(status_flags_readable);
-        socket_io::notify_readable(this);
+        this->notify_readable(this);
 	}
 
 	void socket_native::process_writeable()
@@ -530,13 +538,13 @@ namespace eio
 			this->_status.set(status_flags_connected);
 			this->native_want_read();
 
-			socket_io::notify_opened(this);
+			notify_opened(this);
 		}else if(ff & status_flags_close_after_send)
         {
             this->close();
         }else
 		{
-			socket_io::notify_writeable(this);
+			notify_writeable(this);
 		}
 	}
 
@@ -668,12 +676,12 @@ namespace eio
 		return -1;
 	}
 
-	int socket_native::get_nread_size()
+	int socket_native::get_nread_size() const
 	{
 		u_long size = 0;
 		int result = 0;
 		result = ::ioctlsocket(_handle,FIONREAD,&size );
-		if(result)return -1;
+		if(result)return 0;
 		return size;
 	}
 
@@ -686,6 +694,30 @@ namespace eio
 		return result==0;
 	}
 
+    void socket_native::notify_error(ref_class_i* fire_from_handle)
+    {
+        on_error.fire();
+    }
+
+    void socket_native::notify_opened(ref_class_i* fire_from_handle)
+    {
+        on_opened.fire();
+    }
+
+    void socket_native::notify_closed(ref_class_i* fire_from_handle)
+    {
+        on_closed.fire();
+    }
+
+    void socket_native::notify_readable(ref_class_i* fire_from_handle)
+    {
+        on_readable.fire();
+    }
+
+    void socket_native::notify_writeable(ref_class_i* fire_from_handle)
+    {
+        on_writeable.fire();
+    }
 	int socket_native::socket_udp_pair(int sv[2])
 	{
 		SOCKET out[2];

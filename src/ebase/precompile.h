@@ -34,6 +34,7 @@
 #define min(a,b)            (((a) < (b)) ? (a) : (b))
 #endif
 
+#define SIZE_ALIGN(size,alignment) ((((size)/(alignment))*(alignment))+(((size)%(alignment))?(alignment):0))
 
 #ifndef __weak
 #define __weak __attribute__((weak))

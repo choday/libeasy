@@ -89,56 +89,50 @@ namespace ebase
 		}
 		return true;
 	}
-
+/**@brief 调整数据区大小
+@param[in] size 调整数据区大小,保证对内存的独占引用
+@param[in] keep_data 是否保持数据，如果false,而不保证原数据有效性
+@return 返回可写数据区指针
+@note 如果reset(0)且非独占引用,解除对内存的引用并返回回为0
+*/
 	char* ref_string::resize(int size,bool keep_data)
 	{
+        header* oldp = (header*)this->_data._data;
+        header* p=0;
         if(size<0)size=0;
 
-		header* oldp = (header*)this->_data._data;
-		header* p=0;
+        if(0==this->_data._data && 0== size )return 0;//借用一下_size,返回为一个指向0的字符串
 
-        int new_memory_size = size+1+ref_string::header_size;
-        new_memory_size = ((new_memory_size>>5)<<5)+32;
-        
+        int capacity = SIZE_ALIGN( size+1 + ref_string::header_size,32 )-sizeof( ref_memory::header );
+
         int keep_data_size = 0;
-        if(keep_data)keep_data_size = min(size,this->_size);
+        if(keep_data&&size)keep_data_size = min(size,this->size())+( ref_string::header_size-sizeof( ref_memory::header ) );
 
-		if( 0== oldp )
-		{
-			if(size>0)p = (header*)this->_data.alloc( new_memory_size );
-
-		}else
-		{
-            if(this->_offset>0)
+        if(this->_offset>0 && keep_data_size )
+        {
+            if(oldp->is_alone())
             {
-			    long oldp_ref_count = oldp->add_ref();
-                
-                if( oldp_ref_count==2 )
-                {
-                    if(keep_data_size)memmove( oldp->data,oldp->data+this->_offset,keep_data_size );
-                }else if( oldp_ref_count>2 && keep_data_size )
-                {
-				    p = (header*)this->_data.alloc( new_memory_size );
-				    memcpy(p->data,oldp->data+this->_offset,keep_data_size );
-                }else
-                {
-                    this->_data.clear();
-                }
+                memmove( oldp->data,oldp->data+this->_offset,keep_data_size );
+            }else
+            {
+                oldp->add_ref();
+				
+                p = (header*)this->_data.resize( capacity,0 );//重新分配内存
+				memcpy(p->data,oldp->data+this->_offset,keep_data_size );
 
-                this->_offset = 0;
                 oldp->release();
             }
+        }
 
-
-            p = (header*)this->_data.resize( new_memory_size,keep_data_size+header_size );
-
-		}
+        if(0==size)capacity = 0;
+        if(!p)p = (header*)this->_data.resize( capacity,keep_data_size );
+        if(!p)return 0;
 
         if(p)p->data[size] = 0;
 	    this->_offset=0;
 		this->_size = size;
 
-		return p?p->data:((char*)&_size);//借用一下_size,返回为一个指向0的字符串
+        return p->data;
 	}
 
 	ebase::ref_string::header* ref_string::get_header() const

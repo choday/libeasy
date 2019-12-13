@@ -3,7 +3,7 @@
 namespace ebase
 {
 
-	event_emitter::event_emitter():_event_source(0),_event_executor(0)
+	event_emitter::event_emitter():_has_event(false),_event_source(0),_event_executor(0)
 	{
 
 	}
@@ -19,15 +19,20 @@ namespace ebase
         _function.clear();
 		_event_source = 0;
 		_event_executor = 0;
+        _has_event=false;
 	}
 
 
 	bool event_emitter::fire()
 	{
-		//assert(this->_event_source);
-		if(!_function.isset())return true;
-		if(this->is_schedule())return true;
+		if(!_function.isset())
+        {
+            _has_event=true;
+            return false;
+        }
 
+		if(this->is_schedule())return true;
+        
 		if( 0==_event_executor )
 		{
 			this->run();
@@ -39,6 +44,8 @@ namespace ebase
 	void event_emitter::run()
 	{
         if(!this->_function.isset())return;
+
+        _has_event=false;
         this->_function.invoke(this->_event_source);
 	}
 

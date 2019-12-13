@@ -15,23 +15,31 @@ namespace eio
 		socket_win32(ebase::executor* event_executor);
 		~socket_win32();
 
+       //socket_io
+		virtual int 				    write_buffer(const ebase::buffer& buffer) override;
+		virtual int                     write( const void* data,int len ) override;
 
 
+        //socket_native
 		virtual socket_native_ptr		accept() override;
 
-		virtual bool				    send(const ebase::buffer& buffer) override;
-		virtual bool    			    sendto(const ebase::buffer& buffer,const socket_address& address) override;
-
-		virtual	bool		            native_enter_listener() override;
+ 		virtual	bool		            native_enter_listener() override;
 		virtual	void		            native_leave_listener() override;
         virtual void                    native_io_flags_changed() override;
-        virtual void		            native_want_read() override;
-        virtual void		            native_want_write();
+
+        virtual void		            native_want_write() override;
 
 		virtual	SOCKET		            native_create_socket(int af,int type,int protocol) override;
 		virtual int					    native_connect( const socket_address& address ) override;
-		virtual int			            native_recv(ebase::buffer& data) override;
+
+        virtual int     			    sendto(const ebase::buffer& buffer,const socket_address& address) override;
+
+        virtual void		            native_want_read() override;
+		virtual int			            native_recv(void* data,int len) override;
 		virtual int 			        native_recvfrom(ebase::buffer& data,socket_address* from_address=0) override;
+
+        virtual int                     native_send( const void* data,int len );
+        int                             post_write(const ebase::buffer& data);//成功>0,出错<0,上一个post未完成返回0
 	private:
 
 		bool					post_accept();

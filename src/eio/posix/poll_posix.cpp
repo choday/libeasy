@@ -69,7 +69,7 @@ namespace eio
 
 		for( ebase::ref_list::entry* entry = _manager_list.begin();entry!=_manager_list.end();entry=entry->next() )
 		{
-			socket_posix* socket_handle = (socket_posix*)entry;
+			socket_posix* socket_handle = entry->get_holder<socket_posix>();
 
 			int events = 0;//POLLHUP|POLLERR;
 

@@ -6,7 +6,7 @@
 
 namespace eio
 {
-    //注意ref_function 对菱形继承的支持
+    //注意虚函数的调用，如果绑定的是一个虚函数，那么将调用最终实现
     class stream_socket:public ebase::stream,public stream_socket_notify_i
 	{
 	public:
