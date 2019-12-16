@@ -20,7 +20,7 @@ namespace estream
 
     }
 
-    bool zlib_stream::init(bool compress,deflate_format type/*=deflate_format_raw */)
+    bool zlib_stream::init(bool compress,deflate_format type/*=deflate_format_raw */,bool text_mode)
     {
         _cache_in.resize(0);
         _cache_out.resize(0);
@@ -34,6 +34,8 @@ namespace estream
         _z_stream->avail_in = 0;
         _z_stream->next_out = 0;
         _z_stream->avail_out = 0;
+
+        if(text_mode)_z_stream->data_type = Z_TEXT;
 
         _is_compress=compress;
 

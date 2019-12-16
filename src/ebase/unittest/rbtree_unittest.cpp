@@ -24,13 +24,13 @@ int compare_entry(rbtree_head* head,rbtree_entry* e1,rbtree_entry* e2)
     if(p1->data>p2->data)return 1;
     return 0;
 }
-int compare_value(rbtree_head* head,void* pfindvalue,rbtree_entry* e2)
+int compare_value(rbtree_head* head,rbtree_entry* e1,void* pfindvalue)
 {
-    int* p1 = (int*)pfindvalue;
-    test_rbentry* p2 = (test_rbentry*)e2;
+    test_rbentry* p1 = (test_rbentry*)e1;
+    int* p2 = (int*)pfindvalue;
 
-    if(*p1<p2->data)return -1;
-    if(*p1>p2->data)return 1;
+    if(p1->data<*p2)return -1;
+    if(p1->data>*p2)return 1;
     return 0;
 }
 

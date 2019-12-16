@@ -54,7 +54,7 @@ namespace ehttp
         if(minor_ver>0&&!connection.size())
         {
             if(!keep_alive)connection="Close";
-            //else connection= "Keep-Alive";
+            else connection= "Keep-Alive";
         }
 
         APPEND_BUFFER(connection,"Connection");
@@ -150,10 +150,14 @@ namespace ehttp
         header = strchr( header,':');
         if(!header)return header;
 
-        for( ++header;*header && *header!=' ';++header)
-        {
+        ++header;
 
+        while(*header)
+        {
+            if(*header!=' ')break;
+            ++header;
         }
+
         return header;
     }
 

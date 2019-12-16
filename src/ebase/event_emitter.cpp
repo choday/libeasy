@@ -25,9 +25,10 @@ namespace ebase
 
 	bool event_emitter::fire()
 	{
+        _has_event=true;
 		if(!_function.isset())
         {
-            _has_event=true;
+            
             return false;
         }
 
@@ -35,6 +36,7 @@ namespace ebase
         
 		if( 0==_event_executor )
 		{
+            _has_event=false;
 			this->run();
 			return true;
 		}

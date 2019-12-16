@@ -5,6 +5,7 @@ namespace ehttp
     http_request::http_request()
     {
         accept_encoding = "gzip, deflate";
+        method="GET";
     }
 
     http_request::~http_request()
@@ -42,7 +43,6 @@ namespace ehttp
     {
         ebase::buffer buffer;
 
-        if(!method.length())method="GET";
         method.make_upper();
 
         if(!host.length())

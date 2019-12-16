@@ -18,7 +18,7 @@ namespace estream
             deflate_format_gzip,//gzipͷ
         };
 
-        bool        init(bool compress,deflate_format type=deflate_format_raw );
+        bool        init(bool compress,deflate_format type=deflate_format_raw,bool text_mode = false );
 
         void        disable_auto_release();
     private:

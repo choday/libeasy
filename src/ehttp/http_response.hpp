@@ -19,7 +19,7 @@ namespace ehttp
         ebase::string           status_message;
         ebase::string           server;//Server: nginx
 
-        ebase::buffer           make_buffer();
+        virtual  ebase::buffer  make_buffer() override;
     private:
         virtual  void            on_http_parser_set_status( int status_code,const ebase::string& value ) override;
     };

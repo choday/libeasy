@@ -55,7 +55,7 @@ namespace ebase
         ebase::error    error;
 
 	public://实现者访问
-		void            private_push_buffer(const buffer& data);
+		bool            private_push_buffer(const buffer& data);
 		void            private_notify_end();
 
 		void			private_set_event_executor( executor* event_executor );
@@ -65,6 +65,12 @@ namespace ebase
 		mutex_lock_t<buffer_list>	_buffer_list;
         bool                        _is_eof;
 		bool						_is_paused;
+
+
+        ebase::ref_ptr<stream_writeable>    _stream_writeable;
+        void            flush_to_pip_stream();
+        void            on_pip_drain_event(ebase::ref_class_i* from);
+        void            on_pip_error_event(ebase::ref_class_i* from);
 	};
 
 	class stream:public stream_readable,public stream_writeable

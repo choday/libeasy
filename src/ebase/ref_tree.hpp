@@ -33,7 +33,7 @@ namespace ebase
 		public:
             entry();
 
-            virtual int		    compare_rbtree_entry( entry* left_value ) {return 0;};
+            virtual int		    compare_rbtree_entry( ebase::ref_tree::entry* right_value ) {return 0;};
             virtual int		    compare_rbtree_find_value(void* pfind_value ) {return 0;}
 
             inline void	        set_holder(ref_class_i* holder){this->_holder=holder;}
@@ -65,7 +65,7 @@ namespace ebase
         {
         public:
 			virtual int		    compare_rbtree_entry( entry* left_value,entry* right_value ) = 0;
-			virtual int		    compare_rbtree_find_value(void* pfind_value,entry* right_value ) = 0;
+			virtual int		    compare_rbtree_find_value(entry* left_value,void* pfind_value ) = 0;
         };
 
         void set_entry_compare(entry_compare* c);
@@ -76,6 +76,6 @@ namespace ebase
         entry_compare*  _entry_compare;
 
 		static int compare_rbtree_node(rbtree_head* head, rbtree_entry* e1,rbtree_entry* e2);
-		static int compare_rbtree_find_value(rbtree_head* head,void* pfind_data,rbtree_entry* e2);
+		static int compare_rbtree_find_value(rbtree_head* head,rbtree_entry* e1,void* pfind_data );
 	};
 };

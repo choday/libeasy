@@ -32,7 +32,6 @@ namespace ebase
 
         int         get_nread_size();
         inline void        set_read_cache_size(int size=4096){_read_cache_size=size;};
-        inline bool        is_inited(){return zlib_stream!=0;}
     private:
         z_stream*         zlib_stream;
         int             _total_out;

@@ -96,13 +96,13 @@ namespace eio
 		return 0;
     }
 
-    int socket_rw_manager_posix::compare_rbtree_find_value(void* pfind_value,ebase::ref_tree::entry* right_value)
+    int socket_rw_manager_posix::compare_rbtree_find_value(ebase::ref_tree::entry* left_value, void* pfind_value)
     {
         SOCKET value = *(SOCKET*)&pfind_value;
-        socket_posix* right = right_value->get_holder<socket_posix>();
+        socket_posix* left = left_value->get_holder<socket_posix>();
 
-		if( value<right->get_handle() )return -1;
-		if( value>right->get_handle() )return 1;
+		if( left->get_handle()<value )return -1;
+		if( left->get_handle()>value )return 1;
 		return 0;
     }
 

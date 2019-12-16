@@ -10,6 +10,8 @@ namespace ehttp
         http_protocol();
         ~http_protocol();
 
+        virtual ebase::buffer   make_buffer() = 0;
+
         int                     major_ver;
         int                     minor_ver;
         bool                    chunked;//Transfer-Encoding: chunked
@@ -32,7 +34,7 @@ namespace ehttp
 
         void                    make_headers(ebase::buffer& in_out);
         void                    make_version(ebase::buffer& in_out);
-
+        
         bool                    has_content_length();
         uint64_t                get_content_length();
         bool                    is_end();
@@ -55,8 +57,8 @@ namespace ehttp
         const char* find_header_value(const char* header);
     private:
 
-        virtual void            on_http_parser_add_header( const ebase::string& value ) override;
-        virtual bool            on_http_parser_headers_complete()override;//return false to skip body
+        virtual void                    on_http_parser_add_header( const ebase::string& value ) override;
+        virtual bool                    on_http_parser_headers_complete()override;//return false to skip body
 
         virtual inline void            on_http_parser_body( const char* data,size_t len ){if(_http_protocol_callback)_http_protocol_callback->on_http_protocol_body(data,len);}
         virtual inline void            on_http_parser_chunk_header(){if(_http_protocol_callback)_http_protocol_callback->on_http_protocol_chunk_header();}

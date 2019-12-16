@@ -38,6 +38,10 @@ TEST(http_protocol,parser)
             
         }
         
+        virtual ebase::buffer make_buffer() override
+        {
+            return ebase::buffer();
+        }
     }parse;
 
     int len = (int)strlen(p);
@@ -75,5 +79,7 @@ TEST(http_protocol,parser)
 
 len = (int)strlen(p);
     parse.parse( p,len );
+    bool result = parse.has_content_length();
+
     parse.parse( p,len );
 };

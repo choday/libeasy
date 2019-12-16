@@ -60,7 +60,7 @@ TEST(http_request,make_request)
     char* p =
 "GET /path1/h.html HTTP/1.1\r\n"
 "Host: www.baidu.com\r\n"
-"Accept-Encoding: gzip\r\n"
+"Accept-Encoding: gzip, deflate\r\n"
 "Connection: keep-alive\r\n"
 "\r\n";
 
@@ -82,10 +82,10 @@ TEST(http_response,make_request)
 
     ebase::buffer data = request.make_buffer();
     data.append("\0",1);
-printf("%s\n",data.data() );
+
+
     char* p =
 "HTTP/1.1 200 OK\r\n"
-"Content-Encoding: gzip\r\n"
 "Connection: keep-alive\r\n"
 "Server: elib\r\n"
 "\r\n";

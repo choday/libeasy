@@ -24,7 +24,7 @@ namespace ebase
     private:
         friend class timer_host;
         uint64_t            abs_timeout_ms;
-		virtual int		    compare_rbtree_entry( entry* left_value ) override;
+		virtual int		    compare_rbtree_entry( entry* right_value ) override;
 		virtual int		    compare_rbtree_find_value(void* pfind_value ) override;
     };
 

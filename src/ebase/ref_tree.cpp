@@ -7,17 +7,16 @@ namespace ebase
 
         if(pthis->_entry_compare)return pthis->_entry_compare->compare_rbtree_entry(entry::rbtree_entry2entry(e1),entry::rbtree_entry2entry(e2));
         
-
         return entry::rbtree_entry2entry(e2)->compare_rbtree_entry( entry::rbtree_entry2entry(e1) );
     }
 
-    int ref_tree::compare_rbtree_find_value(rbtree_head* head,void* pfind_data,rbtree_entry* e2)
+    int ref_tree::compare_rbtree_find_value(rbtree_head* head,rbtree_entry* e1,void* pfind_data)
     {
         ref_tree* pthis = (ref_tree*) ((char*)head-(char*)&((ref_tree*)0)->_rbtree_head);
 
-        if(pthis->_entry_compare)return pthis->_entry_compare->compare_rbtree_find_value( pfind_data,entry::rbtree_entry2entry(e2));
+        if(pthis->_entry_compare)return pthis->_entry_compare->compare_rbtree_find_value( entry::rbtree_entry2entry(e1),pfind_data);
         
-        return entry::rbtree_entry2entry(e2)->compare_rbtree_find_value( pfind_data );
+        return entry::rbtree_entry2entry(e1)->compare_rbtree_find_value( pfind_data );
     }
 
     ref_tree::ref_tree():_entry_compare(0)

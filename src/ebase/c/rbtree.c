@@ -38,10 +38,10 @@ struct _rbtree_entry_ * rbtree_find(struct _rbtree_head_ *head, void* pfindvalue
     assert(head->compare_value);
     while (tmp) 
     {
-        comp = head->compare_value( head,pfindvalue, tmp); 
-        if (comp < 0) tmp = tmp->rbe_left; 
-        else if (comp > 0) tmp = tmp->rbe_right; 
-        else return (tmp); 
+        comp = head->compare_value( head,tmp,pfindvalue); 
+        if (comp > 0) tmp = tmp->rbe_left; 
+        else if (comp < 0) tmp = tmp->rbe_right; 
+        else return (tmp);
     } 
 
     return 0;

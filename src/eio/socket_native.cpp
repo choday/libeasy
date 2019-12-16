@@ -176,29 +176,6 @@ namespace eio
         return false;
     }
         
-    int socket_native::write_buffer( const ebase::buffer& data )
-    {
-        return write( data.data(),data.size() );
-    }
-
-    int socket_native::read_buffer( ebase::buffer& data )
-    {
-        int capacity = data.capacity();
-        if(!capacity)capacity = 1024-ebase::buffer::header_size;
-		void* p = data.alloc(capacity);
-
-        int result = read( p,capacity );
-        if( result>0 )
-        {
-            data.resize(result,true);
-        }else
-        {
-            data.resize(0);
-        }
-
-        return result;
-    }
-
     int socket_native::write(const void* data,int len)
     {
         if(!this->test_flags(status_flags_writeable))return 0;
@@ -539,6 +516,8 @@ namespace eio
 			this->native_want_read();
 
 			notify_opened(this);
+            notify_writeable(this);
+
 		}else if(ff & status_flags_close_after_send)
         {
             this->close();

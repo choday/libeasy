@@ -25,19 +25,19 @@ namespace ebase
         }        
     }
 
-    int timer::compare_rbtree_entry(entry* left_value)
+    int timer::compare_rbtree_entry(entry* right_value)
     {
-        timer* e1=(timer*)left_value;
-		if(e1->abs_timeout_ms<this->abs_timeout_ms)return -1;
-        if(e1->abs_timeout_ms>this->abs_timeout_ms)return 1;
+        timer* e2=(timer*)right_value;
+		if(this->abs_timeout_ms<e2->abs_timeout_ms)return -1;
+        if(this->abs_timeout_ms>e2->abs_timeout_ms)return 1;
         return 0;
     }
 
     int timer::compare_rbtree_find_value(void* pfind_value)
     {
         uint64_t* p =(uint64_t*)pfind_value;
-		if(*p<this->abs_timeout_ms)return -1;
-        if(*p>this->abs_timeout_ms)return 1;
+		if(this->abs_timeout_ms<*p)return -1;
+        if(this->abs_timeout_ms>*p)return 1;
         return 0;
     }
 

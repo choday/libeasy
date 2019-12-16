@@ -31,7 +31,7 @@ namespace ehttp
 
         virtual void            add_header(const ebase::string& value) override;
 
-        ebase::buffer           make_buffer();
+        virtual ebase::buffer   make_buffer() override;
     private:
         
     };

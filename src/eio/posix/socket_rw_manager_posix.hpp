@@ -41,7 +41,7 @@ namespace eio
 
 	private:
 		virtual int		    compare_rbtree_entry( ebase::ref_tree::entry* left_value,ebase::ref_tree::entry* right_value ) override;
-		virtual int		    compare_rbtree_find_value(void* pfind_value,ebase::ref_tree::entry* right_value ) override;
+		virtual int		    compare_rbtree_find_value(ebase::ref_tree::entry* left_value,void* pfind_value) override;
 		int			    socketpair_for_event[2];//socketpair_for_event[0]用于接收消息
 	};
 };

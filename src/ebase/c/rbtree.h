@@ -27,7 +27,7 @@ typedef struct _rbtree_head_
     struct _rbtree_entry_* rbh_root;
 
     int     (*compare_entry)(struct _rbtree_head_* head,rbtree_entry* e1,rbtree_entry* e2);
-    int     (*compare_value)(struct _rbtree_head_* head,void* pfindvalue,rbtree_entry* e2);
+    int     (*compare_value)(struct _rbtree_head_* head,rbtree_entry* e1,void* pfindvalue);
 } rbtree_head;
 
 //注意删除优化,尽量先删除list中的节点，最后再删除tree 节点,即while(elm->list_child)rbtree_remove(head,elm->list_child);

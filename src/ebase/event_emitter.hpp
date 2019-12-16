@@ -33,6 +33,7 @@ namespace ebase
 		void                            set_function(  void (*function)(ref_class_i* fire_from_handle) ){this->_function.set((void**)&function,0,0);if(_has_event)this->fire();}
 		void                            clear();
 		bool                            fire();
+        inline bool                     has_event(){return _has_event;}
 
 	protected:
 		virtual void	                run();

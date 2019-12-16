@@ -63,8 +63,6 @@ namespace eio
         virtual void            close(bool delay=true) override;
         virtual int             write( const void* data,int len ) override;
         virtual int             read( void* data,int len ) override;
-        virtual int             write_buffer( const ebase::buffer& data ) override;
-        virtual int             read_buffer( ebase::buffer& data ) override;
         virtual int             get_nread_size() const override;
         virtual int             get_error_code() const override;
         virtual const char*     get_error_message() const override;

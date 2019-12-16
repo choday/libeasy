@@ -47,6 +47,8 @@ namespace ebase
 		int			capacity() const;
 	
 		bool		is_empty() const;
+
+        int         find( const void* data,int len,int startpos=0 ) const;
 	private:
 		friend class buffer_list;
 		header*		probe_unlist_header() const;//返回一份不在list中的内容，如有必须，复制一份新的header，否则返回原来的经过add_ref的header,使用完成以后记得release

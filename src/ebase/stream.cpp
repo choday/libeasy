@@ -98,23 +98,35 @@ namespace ebase
 		data = _buffer_list.pop_front();
 		_buffer_list.unlock();
 
-
 		return data.size()>0;
 	}
 
-    void stream_readable::private_push_buffer(const buffer& data)
+    bool stream_readable::private_push_buffer(const buffer& data)
     {
+        if(_is_eof)return false;
+        bool result = false;
 		_buffer_list.lock();
-		_buffer_list.push_back(data);
+        _buffer_list.push_back(data);
 		_buffer_list.unlock();
 
-        on_data.fire();
+        if(_stream_writeable.valid())
+        {
+            flush_to_pip_stream();
+        }else
+        {
+            on_data.fire();
+        }
+        return true;
     }
 
     void stream_readable::private_notify_end()
     {
         _is_eof=true;
-        on_end.fire();
+
+        if(_stream_writeable.valid())
+            flush_to_pip_stream();
+        else
+            on_end.fire();
     }
 
     bool stream_readable::pause()
@@ -154,10 +166,66 @@ namespace ebase
 
 	bool stream_readable::pip(stream_writeable* writeable)
 	{
+        if(writeable->is_end())return false;
+
+        _stream_writeable = writeable;
+        _stream_writeable->on_drain.set_function( &stream_readable::on_pip_drain_event,this );
+        _stream_writeable->on_error.set_function( &stream_readable::on_pip_error_event,this );
+
+        flush_to_pip_stream();
 
 		return true;
 	}
 
+    void stream_readable::flush_to_pip_stream()
+    {
+        if(!_stream_writeable.valid())return;
+
+		_buffer_list.lock();
+        ebase::buffer data = _buffer_list.pop_front();
+        while(data.size())
+        {
+            if( !_stream_writeable->write(data,true) )
+            {
+                _buffer_list.push_front(data);
+                break;
+            }
+
+            if(_stream_writeable->get_write_cache_size()>_read_cache_size)break;
+
+            data = _buffer_list.pop_front();
+        }
+
+        if(_stream_writeable->is_end())
+        {
+            _buffer_list.clear();
+        }
+		_buffer_list.unlock();
+        
+        if(_buffer_list.data_size()==0&&_is_eof)
+        {
+            _stream_writeable->end();
+            _stream_writeable.reset();
+        }
+
+        if( !_is_eof && _buffer_list.data_size() == 0 )private_on_want_push_buffer.fire();
+    }
+
+    void stream_readable::on_pip_error_event(ebase::ref_class_i* from)
+    {
+        if(_stream_writeable.valid())this->error=_stream_writeable->error;
+        _stream_writeable.reset();
+
+        _is_eof=true;
+        _buffer_list.lock();
+        _buffer_list.clear();
+        _buffer_list.lock();
+    }
+
+    void stream_readable::on_pip_drain_event(ebase::ref_class_i* from)
+    {
+        flush_to_pip_stream();
+    }
 
     int stream_readable::get_nread_size()
     {
@@ -168,6 +236,7 @@ namespace ebase
 	{
 		private_on_want_push_buffer.set_event_executor(event_executor);
 	}
+
 
     stream::stream()
 	{

@@ -200,7 +200,27 @@ namespace ebase
 		return false;
 	}
 
-	buffer::header* buffer::probe_unlist_header() const
+    int buffer::find(const void* data,int len,int startpos) const
+    {
+        if(this->size()==0)return -1;
+        if(0>=len)return -1;
+        if(0>=startpos)startpos=0;
+
+        const char* begin = (const char*)this->data();
+        const char* end = begin+this->size()-len+1;
+
+        const char* p = begin+startpos;
+
+        while( p < end )
+        {
+            if(memcmp( p,data,len )==0)return int(p-begin);
+            ++p;
+        }
+
+        return -1;
+    }
+
+    buffer::header* buffer::probe_unlist_header() const
 	{
 		header* p = (header*)_data._data;
 		if(!p || p->size == 0)return 0;

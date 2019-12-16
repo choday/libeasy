@@ -1,5 +1,7 @@
 #include "http_connection.hpp"
 #include "../eio/ssl/ssl_socket.hpp"
+#include "../estream/zlib_stream.hpp"
+
 #include "stdio.h"
 namespace ehttp
 {
@@ -18,12 +20,6 @@ namespace ehttp
     {
 
     }
-
-    void http_connection::attach_socket_io(socket_io* next)
-    {
-        eio::socket_io_wrap::attach_socket_io(next);
-    }
-
     bool http_connection::open(const ebase::string& host,const ebase::string& port_or_service)
     {
         _is_server=false;
@@ -34,15 +30,15 @@ namespace ehttp
         {
             eio::ssl_socket* s = new eio::ssl_socket();
             s->ssl_set_host_name(request.url.host.c_str());
-            socket_io_wrap::attach_socket_io(s);
+            socket_io_filter::attach_socket_io(s);
         }
 
         if(host.length())
         {
-            return socket_io_wrap::open(host,port_or_service);
+            return socket_io_filter::open(host,port_or_service);
         }else if( request.url.host.length() )
         {
-            return socket_io_wrap::open(request.url.host,request.url.port.length()?request.url.port:request.url.schema);
+            return socket_io_filter::open(request.url.host,request.url.port.length()?request.url.port:request.url.schema);
         }
 
         return false;
@@ -62,7 +58,8 @@ namespace ehttp
     {
         if(!_is_http_opened)return -1;
 
-        do_flush();
+        if( do_flush() < 0 )return -1;
+
         if( _cache_out.size() )return 0;
         _cache_out=data;
         do_flush();
@@ -72,7 +69,7 @@ namespace ehttp
 
     int http_connection::read_buffer(ebase::buffer& data)
     {
-        if(_http_cache_data.data())
+        if(_http_cache_data.size())
         {
             data=_http_cache_data;
             _http_cache_data.resize(0);
@@ -93,7 +90,7 @@ namespace ehttp
 
     void http_connection::notify_error(ref_class_i* fire_from_handle)
     {
-        eio::socket_io_wrap::notify_error(fire_from_handle);
+        eio::socket_io_filter::notify_error(fire_from_handle);
     }
 
     void http_connection::notify_opened(ref_class_i* fire_from_handle)
@@ -103,7 +100,7 @@ namespace ehttp
         //ebase::string temp( (const char*)data.data(),data.size() );
         //printf("send\n%s\n",temp.c_str() );
 
-        int result = eio::socket_io_wrap::_next_socket_io->write_buffer(data);
+        int result = eio::socket_io_filter::_next_socket_io->write_buffer(data);
         if(result>0)data.resize(0);
         else if(_cache_out.size()==0)
         {
@@ -116,7 +113,7 @@ namespace ehttp
 
     void http_connection::notify_closed(ref_class_i* fire_from_handle)
     {
-        eio::socket_io_wrap::notify_closed(fire_from_handle);
+        eio::socket_io_filter::notify_closed(fire_from_handle);
     }
 
     void http_connection::notify_readable(ref_class_i* fire_from_handle)
@@ -128,13 +125,13 @@ namespace ehttp
 
         if( _http_cache_data.size() )
         {
-            eio::socket_io_wrap::notify_readable(this);
+            eio::socket_io_filter::notify_readable(this);
         }
     }
 
     void http_connection::notify_writeable(ref_class_i* fire_from_handle)
     {
-        //eio::socket_io_wrap::notify_writeable(fire_from_handle);
+        //eio::socket_io_filter::notify_writeable(fire_from_handle);
     }
 
     bool http_connection::do_fetch_once(ebase::buffer& out_buffer)
@@ -170,38 +167,81 @@ namespace ehttp
         return true;
     }
 
-    bool http_connection::do_flush()
+    int http_connection::do_flush()
     {
+        int n=0;
         if(_cache_out.size())
         {
-            if( socket_io_wrap::_next_socket_io->write_buffer( _cache_out ) >0)
+            n=socket_io_filter::_next_socket_io->write_buffer( _cache_out );
+            if( n > 0 )
             {
                 _cache_out.resize(0);
-                return true;
+                return n;
             }
         }
-        return false;
+        return n;
     }
 
     bool http_connection::on_http_protocol_headers_complete()
     {
         _is_http_opened=true;
-        eio::socket_io_wrap::notify_opened(this);
+
+/*
+        estream::zlib_stream* compress_stream = 0;
+
+        if(_is_server && request.accept_encoding.length() )
+        {
+
+            request.accept_encoding.make_lower();
+            if(request.accept_encoding.find("gzip")>=0)
+            {
+                compress_stream=new estream::zlib_stream();
+                compress_stream->init( true,estream::zlib_stream::deflate_format_gzip );
+            }else if(request.accept_encoding.find("deflate")>=0)
+            {
+                compress_stream=new estream::zlib_stream();
+                compress_stream->init( true,estream::zlib_stream::deflate_format_raw );
+            }else
+            {
+                //unsupport encoding
+            }
+
+
+        }
+
+        if(compress_stream)
+        {
+            _stream_writeable=compress_stream;
+        }else
+        {
+            _stream_writeable = new ebase::stream_writeable();
+        }
+*/
+
+        estream::zlib_stream* uncompress_stream = 0;
 
         if(_current_http_parser->content_encoding.length())
         {
             if( _current_http_parser->content_encoding.compare_ignore_case("gzip")==0 )
             {
+                uncompress_stream=new estream::zlib_stream();
+                uncompress_stream->init( false,estream::zlib_stream::deflate_format_gzip );
 
             }else if( _current_http_parser->content_encoding.compare_ignore_case("deflate")==0 )
             {
-
+                uncompress_stream=new estream::zlib_stream();
+                uncompress_stream->init( false,estream::zlib_stream::deflate_format_raw );
             }else
-            {//error unsupport encoding
+            {
+                //error unsupport encoding
 
+                return false;
             }
+      
         }
 
+
+        eio::socket_io_filter::notify_opened(this);
         return true;
     }
 
@@ -214,16 +254,6 @@ namespace ehttp
         {
             _http_fetch_once_body_cache->append( data,len );
         }
-    }
-
-    void http_connection::on_http_protocol_chunk_header()
-    {
-
-    }
-
-    void http_connection::on_http_protocol_chunk_complete()
-    {
-
     }
 
     void http_connection::on_http_protocol_complete()
