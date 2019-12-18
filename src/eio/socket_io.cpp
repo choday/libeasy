@@ -2,14 +2,17 @@
 #include "socket_native.hpp"
 namespace eio
 {
+
+    socket_io::socket_io()
+    {
+        on_opened.set_event_source(this);
+    }
+
     void socket_io::set_event_executor(ebase::executor* event_executor)
     {
-		on_opened.set_event_executor(event_executor);
+        io_method::set_event_executor(event_executor);
 
-		on_readable.set_event_executor(event_executor);
-		on_writeable.set_event_executor(event_executor);
-		on_closed.set_event_executor(event_executor);
-		on_error.set_event_executor(event_executor);
+		on_opened.set_event_executor(event_executor);
     }
 
     void socket_io::clear_all_event()

@@ -10,14 +10,15 @@ namespace ehttp
         status_message="OK";
     }
 
-    void http_response::add_header(const ebase::string& value)
+    bool http_response::add_header(const ebase::string& value)
     {
         if(0 == value.compare_size_ignore_case("server",4) )
         {
             server = http_protocol::find_header_value( value.c_str() );
+            return true;
         }else
         {
-            http_protocol::add_header(value);
+            return http_protocol::add_header(value);
         }
     }
 
@@ -43,6 +44,7 @@ namespace ehttp
             buffer.append( "\r\n",2 );
         }
 
+        if(!chunked&&!upgrade&&-1==content_length)content_length=0;
         http_protocol::make_headers(buffer);
 
 #define APPEND_BUFFER( value_name,field_string )\
@@ -52,13 +54,6 @@ namespace ehttp
             buffer.append( p,sizeof(p)-1 );\
             buffer.append( value_name.data(),value_name.length() );\
             buffer.append( "\r\n",2 );\
-        }
-
-        if(!http_protocol::chunked)
-        {
-            ebase::string content_length;
-            content_length="0";
-            APPEND_BUFFER( content_length,"Content-Length" );
         }
 
         APPEND_BUFFER(server,"Server");

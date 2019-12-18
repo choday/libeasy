@@ -8,11 +8,28 @@
 #include "../ebase/ref_list.hpp"
 #include "http_response.hpp"
 #include "http_request.hpp"
+
 //https://www.php.cn/manual/view/35537.html
 //https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Protocol_upgrade_mechanism
 namespace ehttp
 {
-    class http_socket:public eio::socket_io_filter,public http_protocol::http_protocol_callback,public ebase::ref_list::entry
+    /**
+    @brief http socket io
+    @details 实现http协议io
+
+    @code
+        简单用法
+        http_socket_ptr _http_socket=new http_socket();
+
+        _http_socket->request.url.parse("https://cloud.tencent.com/developer/section/1189886");
+
+        ... wait for event:_http_socket->on_open
+
+
+        _http_socket->read_buffer();
+    @endcode
+    */
+    class http_socket:public eio::socket_io_filter,public ebase::ref_list::entry
     {
     public:
         http_socket();
@@ -20,28 +37,27 @@ namespace ehttp
 
         http_request            request;
         http_response           response;
-        ///_head_cache_in最大值,如果http header大于这个值，将会出错
-        int                     max_head_cache_size;
-        int                     max_head_line_size;
 
         virtual void            init(bool is_server=true);
 
         virtual bool            open();
         virtual bool            open(const ebase::string& host,const ebase::string& port_or_service) override;
         virtual bool			open(const eio::socket_address& address ) override;
+        virtual void            close(bool delay=true) override;
 
         virtual int             write( const void* data,int len ) override;
         virtual int             read( void* data,int len ) override;
 
         virtual int             get_nread_size() const override;
+        virtual int             get_error_code() const override ;
+        virtual const char*     get_error_message() const override;
+
+        int                     begin_write();
+        bool                    end_write();
 
         int                     send_response(int status_code=200,const ebase::string& status_msg="");
-        int                     send_response(const ebase::string& data);
-
-        int                     write_http_body( const void* data,int len );
-        int                     read_http_body( void* data,int len );
+        int                     send_response(const ebase::string& data);//begin_write+write+end_write
     protected:
-
 		virtual void			notify_error(ref_class_i* fire_from_handle) override;
 		virtual void			notify_opened(ref_class_i* fire_from_handle) override;
 		virtual void			notify_closed(ref_class_i* fire_from_handle) override;
@@ -49,41 +65,23 @@ namespace ehttp
 		virtual void			notify_readable(ref_class_i* fire_from_handle) override;
 		virtual void			notify_writeable(ref_class_i* fire_from_handle) override;
 
-
-        int                     do_fetch_chunk_header();//返回0,需要再次调用，返回-1,出错，返回大于0(已处理字节数量),成功
-        int                     do_fetch_chunk_end();//返回0,需要再次调用，返回-1,出错，返回大于0(已处理字节数量),成功
-        
-        int                     do_read_body(char* data,int len);
-        int                     do_read_data(char* data,int len);//从_head_cache_in或者底层读取数据
-
-        int                     do_parse_header();//返回0,需要再次调用，返回-1,出错，返回大于0,成功
-        int                     do_head_cache_in();
+        int                     write_http_data( const void* data,int len );
+        int                     read_http_data( void* data,int len );
     private:
+        ebase::buffer           _head_cache_out;
         ebase::buffer           _head_cache_in;
         int                     _head_cache_in_offset;
-        int                     _head_cache_in_line_end;
-        int                     _total_head_size;
-        ebase::buffer           _head_cache_out;
+        bool                    _is_write_end;
 
         bool                    _is_server;
         http_protocol*          _current_http_parser;
-        uint64_t                content_nread;
-        bool                    _is_http_opened;
+        http_protocol*          _current_http_writer;
 
-        enum
-        {
-            read_body_need_header,//还没有body,需要解析http header
-            read_body_eof,//body 长度为0或者已读完
-            read_body_to_content_length,//body 长度不为0,还需要继续读取this->content_nread长度
-            read_body_need_thunked_header,//需要处理chunked header
-            read_body_to_thunked_length,//需要读取this->content_nread长度
-            read_body_to_connection_close,//需要读取，直到连接结束
-        }                       _read_body_type;
+        int                     do_skip_chunked();
 
-        virtual bool on_http_protocol_headers_complete() override;
-        virtual void on_http_protocol_chunk_header();
-        virtual void on_http_protocol_chunk_complete();
-        virtual void on_http_protocol_complete()override;
+        int                     do_read_http_body(char* data,int len);
+        int                     do_read_socket_data(char* data,int len);//从_head_cache_in或者底层读取数据
+        int                     do_write_http_chunk( const void* data,int len );
     };
 
     typedef ebase::ref_ptr<http_socket> http_socket_ptr;

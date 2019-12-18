@@ -12,12 +12,13 @@ namespace ehttp
     public:
         http_response();
 
-        virtual void            add_header(const ebase::string& value) override;
+        virtual bool            add_header(const ebase::string& value) override;
         void                    set_status(int code,const ebase::string& msg=ebase::string());
 
         int                     status_code;
         ebase::string           status_message;
         ebase::string           server;//Server: nginx
+
 
         virtual  ebase::buffer  make_buffer() override;
     private:

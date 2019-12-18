@@ -7,10 +7,10 @@
 TEST(ref_tree,ref_tree)
 {
 
-	class entry:public ebase::ref_tree::entry,public ebase::ref_class<>
+	class entry_node:public ebase::ref_tree::entry,public ebase::ref_class<>
 	{
 	public:
-		entry(int v):value(v){
+		entry_node(int v):value(v){
             ebase::ref_tree::entry::set_holder(this);
         }
 
@@ -18,12 +18,12 @@ TEST(ref_tree,ref_tree)
             return ;
         }
 
-		virtual int		compare_rbtree_entry( ebase::ref_tree::entry* left_value )
+		virtual int		compare_rbtree_entry( ebase::ref_tree::entry* right_value )
 		{
-			entry* p = (entry*)left_value;
+			entry_node* p = (entry_node*)right_value;
 
-			if(p->value<this->value)return -1;
-			if(p->value>this->value)return 1;
+			if(this->value<p->value)return -1;
+			if(this->value>p->value)return 1;
 
 			return 0;
 		}
@@ -32,8 +32,8 @@ TEST(ref_tree,ref_tree)
 		{
 			int aaa=*(int*)&find_value;
 
-			if(aaa<this->value)return -1;
-			if(aaa>this->value)return 1;
+			if(this->value<aaa)return -1;
+			if(this->value>aaa)return 1;
 
 			return 0;
 		}
@@ -43,10 +43,14 @@ TEST(ref_tree,ref_tree)
 
 	ebase::ref_tree tree;
 
-	entry		a1(1),a2(2),a3(3),a4(4),a5(5);
-	entry		b2(2);
+	entry_node		a1(1),a2(2),a3(3),a4(4),a5(5);
+	entry_node		b2(2);
 
 	EXPECT_TRUE( tree.insert_equal(&a1) );
+	entry_node* pp1 = (entry_node*)tree.find((void*)1);
+	ASSERT_TRUE(pp1!=0);
+	EXPECT_EQ(pp1->value,1);
+
 	EXPECT_FALSE( tree.insert_equal(&a1) );
 	ASSERT_TRUE( a1.ref_count() == 1 );
 	EXPECT_TRUE( tree.remove(&a1) );
@@ -81,42 +85,43 @@ TEST(ref_tree,ref_tree)
 	EXPECT_FALSE( tree.insert_equal(&b2) );
 	EXPECT_FALSE( b2.in_rbtree() );
 
-	entry* pp = (entry*)tree.find((void*)1);
-	ASSERT_TRUE(pp!=0);
-	EXPECT_EQ(pp->value,1);
-
-	pp = (entry*)tree.find((void*)-1);
-	ASSERT_TRUE(pp==0);
-
 	ASSERT_FALSE(tree.insert_equal(&a3));
 
 	ebase::ref_tree::entry*	iter = tree.begin();
 	ASSERT_TRUE( iter != 0 );
-	EXPECT_EQ( 1,((entry*)iter)->value );
+	EXPECT_EQ( 1,((entry_node*)iter)->value );
 
 	iter = tree.next( iter );
 
 	ASSERT_TRUE( iter != 0 );
-	EXPECT_EQ( 2,((entry*)iter)->value );
+	EXPECT_EQ( 2,((entry_node*)iter)->value );
 
 	iter = tree.next( iter );
 
 	ASSERT_TRUE( iter != 0 );
-	EXPECT_EQ( 3,((entry*)iter)->value );
+	EXPECT_EQ( 3,((entry_node*)iter)->value );
 
 	iter = tree.next( iter );
 
 	ASSERT_TRUE( iter != 0 );
-	EXPECT_EQ( 4,((entry*)iter)->value );
+	EXPECT_EQ( 4,((entry_node*)iter)->value );
 
 	iter = tree.next( iter );
 
 	ASSERT_TRUE( iter != 0 );
-	EXPECT_EQ( 5,((entry*)iter)->value );
+	EXPECT_EQ( 5,((entry_node*)iter)->value );
 
 	iter = tree.next( iter );
 
 	ASSERT_TRUE( iter == 0 );
+
+
+	entry_node* pp = (entry_node*)tree.find((void*)1);
+	ASSERT_TRUE(pp!=0);
+	EXPECT_EQ(pp->value,1);
+
+	pp = (entry_node*)tree.find((void*)-1);
+	ASSERT_TRUE(pp==0);
 
 
 	ASSERT_TRUE(tree.remove(&a2));

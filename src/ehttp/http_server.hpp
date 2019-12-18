@@ -29,6 +29,8 @@ namespace ehttp
         void			         on_acceptable(ebase::ref_class_i* fire_from_handle);
         void			         on_opened(ebase::ref_class_i* fire_from_handle);
         void			         on_error(ebase::ref_class_i* fire_from_handle);
+    private:
+        bool                    do_accept();
     };
 
 };

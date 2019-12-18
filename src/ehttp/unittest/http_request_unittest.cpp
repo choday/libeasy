@@ -87,6 +87,7 @@ TEST(http_response,make_request)
     char* p =
 "HTTP/1.1 200 OK\r\n"
 "Connection: keep-alive\r\n"
+"Content-Length: 0\r\n"
 "Server: elib\r\n"
 "\r\n";
 

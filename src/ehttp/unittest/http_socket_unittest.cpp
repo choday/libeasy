@@ -16,7 +16,7 @@ ebase::thread_loop  loop;
 
     ehttp::http_socket_ptr connection=new ehttp::http_socket();
 
-    connection->request.accept_encoding="";
+    //connection->request.accept_encoding="";
     connection->request.url.parse("https://cloud.tencent.com/developer/section/1189886");
     //connection->request.url.parse("https://www.baidu.com");
 

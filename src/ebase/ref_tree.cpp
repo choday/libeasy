@@ -7,7 +7,7 @@ namespace ebase
 
         if(pthis->_entry_compare)return pthis->_entry_compare->compare_rbtree_entry(entry::rbtree_entry2entry(e1),entry::rbtree_entry2entry(e2));
         
-        return entry::rbtree_entry2entry(e2)->compare_rbtree_entry( entry::rbtree_entry2entry(e1) );
+        return entry::rbtree_entry2entry(e1)->compare_rbtree_entry( entry::rbtree_entry2entry(e2) );
     }
 
     int ref_tree::compare_rbtree_find_value(rbtree_head* head,rbtree_entry* e1,void* pfind_data)
@@ -16,7 +16,9 @@ namespace ebase
 
         if(pthis->_entry_compare)return pthis->_entry_compare->compare_rbtree_find_value( entry::rbtree_entry2entry(e1),pfind_data);
         
-        return entry::rbtree_entry2entry(e1)->compare_rbtree_find_value( pfind_data );
+        entry* left = entry::rbtree_entry2entry(e1);
+
+        return left->compare_rbtree_find_value( pfind_data );
     }
 
     ref_tree::ref_tree():_entry_compare(0)

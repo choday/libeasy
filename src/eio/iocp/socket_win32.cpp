@@ -32,7 +32,7 @@ namespace eio
 
 	SOCKET socket_win32::native_create_socket(int af,int type,int protocol)
 	{
-		SOCKET s = ::WSASocket( af,type,protocol,0,0,WSA_FLAG_OVERLAPPED );
+		SOCKET s = ::WSASocketA( af,type,protocol,0,0,WSA_FLAG_OVERLAPPED );
 
 		if(INVALID_SOCKET!=s)
 		{

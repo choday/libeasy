@@ -21,10 +21,10 @@ struct _rbtree_entry_ * rbtree_find_by_entry(struct _rbtree_head_ *head, struct 
     assert(head->compare_entry);
     while (tmp) 
     {
-        comp = head->compare_entry(head,elm, tmp); 
+        comp = head->compare_entry(head,elm,tmp); 
         if (comp < 0) tmp = tmp->rbe_left; 
         else if (comp > 0) tmp = tmp->rbe_right; 
-        else return (tmp); 
+        else return (tmp);
     } 
 
     return (NULL); 
@@ -91,7 +91,7 @@ struct _rbtree_entry_ * rbtree_minmax(struct _rbtree_head_ *head, int return_min
     struct _rbtree_entry_ *tmp = head->rbh_root; 
     struct _rbtree_entry_ *parent = NULL; 
     
-    while (tmp) 
+    while(tmp) 
     { 
         parent = tmp; 
         if (return_min) tmp = tmp->rbe_left; 
@@ -349,14 +349,13 @@ struct _rbtree_entry_ * rbtree_insert_tiny(struct _rbtree_head_ *head, struct _r
     while (tmp) 
     { 
         parent = tmp; 
-        comp = head->compare_entry(head,elm, parent); 
+        comp = head->compare_entry(head,elm,parent); 
 
         if (comp < 0) tmp = tmp->rbe_left; 
         else if (comp > 0) tmp = tmp->rbe_right; 
         else return tmp; 
     } 
     
-
     do { elm->rbe_parent = parent; elm->rbe_left = elm->rbe_right = NULL; elm->rbe_color = RB_COLOR_RED; } while (0); 
     
     if (parent != NULL) 

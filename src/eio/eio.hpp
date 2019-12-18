@@ -1,7 +1,8 @@
 #pragma once
 
 #include "../ebase/thread_loop.hpp"
-
+/**@brief io名字空间，所有io操作类均在此类下面
+*/
 namespace eio
 {
 	ebase::executor*	get_netio_executor();//多线程

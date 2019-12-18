@@ -46,7 +46,7 @@ TEST(http_protocol,parser)
 
     int len = (int)strlen(p);
 
-    parse.parse( p,len );
+    //parse.parse( p,len );
     //printf("%d:%s(%s)\n",parse.get_error_code(),parse.get_error_name(),parse.get_error_message() );
 //ASSERT_EQ(parse.body_data_length,0);
 //ASSERT_STRCASEEQ( parse.method.c_str(),"GET" );
@@ -78,8 +78,7 @@ TEST(http_protocol,parser)
 "00\r\n";
 
 len = (int)strlen(p);
-    parse.parse( p,len );
-    bool result = parse.has_content_length();
+    //.parse( p,len );
 
-    parse.parse( p,len );
+    //parse.parse( p,len );
 };

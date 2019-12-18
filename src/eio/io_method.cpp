@@ -11,6 +11,14 @@ namespace eio
 		on_error.set_event_source(this);
     }
 
+    void io_method::set_event_executor(ebase::executor* event_executor)
+    {
+		on_readable.set_event_executor(event_executor);
+		on_writeable.set_event_executor(event_executor);
+		on_closed.set_event_executor(event_executor);
+		on_error.set_event_executor(event_executor);
+    }
+
     int io_method::read_buffer(ebase::buffer& data)
     {
         int capacity = data.capacity();

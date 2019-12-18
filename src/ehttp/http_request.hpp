@@ -27,9 +27,7 @@ namespace ehttp
         ebase::string           authorization;
         ebase::string           cookie;
 
-        ebase::buffer           body;
-
-        virtual void            add_header(const ebase::string& value) override;
+        virtual bool            add_header(const ebase::string& value) override;
 
         virtual ebase::buffer   make_buffer() override;
     private:

@@ -11,23 +11,19 @@ namespace eio
     public:
         io_method();
 
-        ///出错
-		ebase::event_emitter				on_error;
-        ///数据流被关闭
-		ebase::event_emitter				on_closed;
-
-        ///可进行读操作
-		ebase::event_emitter				on_readable;
-        ///可写
-		ebase::event_emitter				on_writeable;
+		ebase::event_emitter				on_error;///< io出错,调用get_error_code,get_error_message获取更多信息
+		ebase::event_emitter				on_closed;///< io对象被关闭
+		ebase::event_emitter				on_readable;///< 可进行读操作
+		ebase::event_emitter				on_writeable;///< 可写
 
         ///为所有事件设置执行器ebase::executor
-        virtual void            set_event_executor( ebase::executor* event_executor )=0;
+        virtual void            set_event_executor( ebase::executor* event_executor );
 
-        ///是否打开
-        virtual bool            is_opened() = 0;
-        virtual int             get_error_code() const = 0;
-        virtual const char*     get_error_message() const =0;
+        
+        virtual bool            is_opened() = 0;///< io是否打开
+        virtual int             get_error_code() const = 0;///< 获取错误码
+        virtual const char*     get_error_message() const =0;///< 获取错误码描述字符串
+
 /**
 @brief 关闭对象
 
@@ -58,15 +54,15 @@ namespace eio
 */
         virtual int             write(const void* data,int len) = 0;
 /**
-@brief 弹出数据 ,减少数据复制
-@details 从下层直接弹出数据,如果下层没有处理，默认调用read
+@brief 读取数据到ebase::buffer对象
+@details 从下层直接弹出数据,如果下层没有实现，默认调用read
 @param[out] data 返回的数据缓冲区，如果不提前分配，则底层自动分配
 @return 返回弹出数据长度,即data.size();出错返回-1,不可写返回0
 @note 此函数缓冲区操作交给底层实现者，调用者无法控制缓存大小,如果传入的data.capacity()==0,底层调用data.alloc()分配内存
 */
         virtual int            read_buffer( ebase::buffer& data );
 /**
-@brief 压入数据 
+@brief 写入数据 
 @details 把一个数据块缓冲区直接送给下层处理,减少数据复制,如果下层没有处理，默认调用write
 @param[in] data
 @return 返回数据长度,即data.size();出错返回-1,不可写返回0

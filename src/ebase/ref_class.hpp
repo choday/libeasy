@@ -5,16 +5,18 @@
 
 namespace ebase
 {
+    ///@brief 带引用计数的接口类,自动释放
 	class ref_class_i
 	{
 	public:
-		virtual long		add_ref() = 0;
-		virtual long		release() = 0;
-		virtual long		ref_count() const = 0;
+		virtual long		add_ref() = 0;///< 增加引用计数，返回增加后的计数
+		virtual long		release() = 0;///< 减少引用计数，返回减少后的计数,如果计数为0则on_destroy会被调用
+		virtual long		ref_count() const = 0;///< 返回引用计数
 	private:
-		virtual void		on_destroy() = 0;
+		virtual void		on_destroy() = 0;///< 当引用计数减少为0时被调用，引用计数从负数增加到0不会被调用
 	};
 
+    ///@brief 模板实现ref_class_i接口
 	template<class CLASS_TYPE=ref_class_i>
 	class ref_class:public CLASS_TYPE,public class_allocator
 	{
@@ -26,9 +28,9 @@ namespace ebase
 		virtual long		add_ref() override;
 		virtual long		release() override;
 
-		inline	void		set_out_ref(ref_class_i* outref){this->_out_ref=outref;}
+		inline	void		    set_out_ref(ref_class_i* outref){this->_out_ref=outref;}
 		inline	ref_class_i*	get_out_ref() const {return this->_out_ref;}
-		virtual long		ref_count() const override{if(_out_ref)return _out_ref->ref_count();else return _ref_count;}
+		virtual long		    ref_count() const override{if(_out_ref)return _out_ref->ref_count();else return _ref_count;}
 	private://禁用下列函数
 		ref_class(const ref_class&);
 		ref_class& operator=(const ref_class& v);
@@ -40,6 +42,7 @@ namespace ebase
 	};
  //template class __declspec(dllexport) ref_class<>;
 
+    ///@brief 用于持有ref_class_i指针
 	template<class CLASS_TYPE=ref_class_i>
 	class ref_ptr
 	{
@@ -58,15 +61,16 @@ namespace ebase
 		bool		operator!=(const ref_ptr& ptr) const;
 
 		CLASS_TYPE*			get();
-		CLASS_TYPE*	get() const;
+		CLASS_TYPE*	        get() const;
 
 		operator CLASS_TYPE*();
 		operator CLASS_TYPE*() const;
 		CLASS_TYPE&	operator*();
 		CLASS_TYPE*	operator->();
         CLASS_TYPE*	operator->() const;
-		bool			valid() const;
-		CLASS_TYPE*		escape();
+
+		bool			valid() const;///< 当前是否有引用对象指针
+		CLASS_TYPE*		escape();///< 将ref_class_i对象，从本类中移除,调用者需要对返回值进行release
 	private:
 		mutable CLASS_TYPE*			_object;
 	};

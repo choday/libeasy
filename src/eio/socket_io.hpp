@@ -11,6 +11,7 @@ namespace eio
     class socket_io:public io_method
     {
     public:
+        socket_io();
  
         ///数据流成功打开
 		ebase::event_emitter				on_opened;

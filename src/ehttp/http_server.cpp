@@ -2,6 +2,7 @@
 #include "http_connection.hpp"
 #include "http_socket.hpp"
 #include "../eio/ssl/ssl_socket.hpp"
+#include <stdio.h>
 namespace ehttp
 {
 
@@ -43,10 +44,12 @@ namespace ehttp
     }
 
 
-
-    void http_server::on_acceptable(ebase::ref_class_i* fire_from_handle)
+    bool http_server::do_accept()
     {
+
         eio::socket_native_ptr new_socket = _listen_socket->accept();
+        if(!new_socket.valid())return false;
+
         http_socket_ptr        phttp_socket = new http_socket();
 
         phttp_socket->on_opened.set_function( &http_server::on_opened,this );
@@ -69,6 +72,13 @@ namespace ehttp
 
         bool result = _pendding_list.push_back( phttp_socket.get() );
         assert(result);
+        printf("accept\n");
+        return true;
+    }
+
+    void http_server::on_acceptable(ebase::ref_class_i* fire_from_handle)
+    {
+        while(do_accept()){};
     }
 
     void http_server::on_opened(ebase::ref_class_i* fire_from_handle)
@@ -90,9 +100,10 @@ namespace ehttp
         http_socket* _http_socket = (http_socket*)fire_from_handle;
     }
 
+
     void http_server::on_http_request(http_socket* _http_socket)
     {
-        _http_socket->send_response();
+        _http_socket->send_response("ok");
         //http_virtual_server::add_request( _http_socket );
     }
 

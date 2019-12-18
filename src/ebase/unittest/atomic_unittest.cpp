@@ -32,6 +32,17 @@ TEST(atomic,atomic)
 
 	EXPECT_EQ(ebase::atomic::fetch_and_sub(&value,1),1);
 	EXPECT_EQ(value,0);
+
+    void* p =0;
+    void* p2=&p;
+
+    EXPECT_EQ((void*)0,ebase::atomic::set_pointer(&p,p2 ) );
+    EXPECT_EQ(p,(void*)&p );
+
+    EXPECT_EQ(p2,ebase::atomic::compare_and_set_pointer( &p,0,&p2 ));
+    p=0;
+    EXPECT_EQ(0,ebase::atomic::compare_and_set_pointer( &p,0,&p2 ));
+    EXPECT_EQ(p,(void*)&p2 );
 }
 
 TEST(atomic,atomic_flags)

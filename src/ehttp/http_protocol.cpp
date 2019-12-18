@@ -1,17 +1,20 @@
 #include "http_protocol.hpp"
 #include <stdio.h>
+#include <stdlib.h>
+
 namespace ehttp
 {
 
     http_protocol::http_protocol()
     {
+        content_length=-1;
+
         major_ver = 1;
         minor_ver = 1;
         chunked=false;
         keep_alive=true;
         upgrade=false;
 
-        _http_protocol_callback = 0;
     }
 
     http_protocol::~http_protocol()
@@ -22,6 +25,8 @@ namespace ehttp
     void http_protocol::reset()
     {
         http_parser_wrap::reset();
+
+        content_length=-1;
 
         major_ver = 1;
         minor_ver = 1;
@@ -35,8 +40,7 @@ namespace ehttp
 
     void http_protocol::make_headers(ebase::buffer& buffer)
     {
-
-
+        if(minor_ver<1)keep_alive = false;
 
 
 #define APPEND_BUFFER( value_name,field_string )\
@@ -49,7 +53,13 @@ namespace ehttp
         }
 
         APPEND_BUFFER(upgrade_protocol,"Upgrade");
-        if(upgrade_protocol.length())connection="Upgrade";
+        if(upgrade_protocol.length())
+        {
+            upgrade = true;
+            connection="Upgrade";
+            keep_alive = true;
+            if(minor_ver<1)minor_ver=1;
+        }
 
         if(minor_ver>0&&!connection.size())
         {
@@ -59,16 +69,21 @@ namespace ehttp
 
         APPEND_BUFFER(connection,"Connection");
 
-        APPEND_BUFFER(content_encoding,"Content_Encoding");
+        if(!upgrade_protocol.length()&&!chunked&&content_length!=-1)
+        {
+            ebase::string strcontent_length;
+            strcontent_length.fomart_assign("%llu",content_length);
+            APPEND_BUFFER( strcontent_length,"Content-Length" );
+        }
+      
+        APPEND_BUFFER(content_encoding,"Content-Encoding");
 
 #undef APPEND_BUFFER
-
-        if(chunked)
+        if(chunked&&minor_ver>0)
         {
             char p[] = "Transfer-Encoding: chunked\r\n";
             buffer.append( p,sizeof(p)-1 );
         }
-
         for(int i = 0;i<headers.size();++i)
         {
             const ebase::string& data = headers.at(i);
@@ -85,22 +100,8 @@ namespace ehttp
         buffer.append( ver,8 );
     }
 
-    bool http_protocol::has_content_length()
-    {
-        return (this->_http_parser.flags&F_CONTENTLENGTH)!=0;
-    }
 
-    uint64_t http_protocol::get_content_length()
-    {
-        return _http_parser.content_length;
-    }
-
-    bool http_protocol::is_end()
-    {
-        return this->state==state_on_message_complete;
-    }
-
-    void http_protocol::add_header(const ebase::string& value)
+    bool http_protocol::add_header(const ebase::string& value)
     {
         if(0 == value.compare_size_ignore_case("connection",10 ) )
         {
@@ -108,41 +109,30 @@ namespace ehttp
         }else if(0 == value.compare_size_ignore_case("Upgrade",7) )
         {
             upgrade_protocol = find_header_value(value.c_str());
+        }else if(0 == value.compare_size_ignore_case("Content-Length",15) )
+        {
+            const char* p = find_header_value(value.c_str());
+            if(!p)p="0";
+            content_length = _strtoi64(p,0,10);
         }else if(0 == value.compare_size_ignore_case("Content-Encoding",16) )
         {
             content_encoding = find_header_value(value.c_str());
         }else headers.push(value);
+        return true;
     }
     
-    void http_protocol::add_header(const ebase::string& name,const ebase::string& value)
+    bool http_protocol::add_header(const ebase::string& name,const ebase::string& value)
     {
         ebase::string header = name;
         header += ": ";
         header += value;
 
-        add_header(header);
+        return add_header(header);
     }
 
     void http_protocol::on_http_parser_add_header(const ebase::string& value)
     {
         add_header(value);        
-    }
-
-    bool http_protocol::on_http_parser_headers_complete()
-    {
-        major_ver = http_parser_wrap::_http_parser.http_major;
-        minor_ver = http_parser_wrap::_http_parser.http_minor;
-        upgrade=http_parser_wrap::_http_parser.upgrade;
-
-        int flags = http_parser_wrap::_http_parser.flags;
-
-        chunked = (flags&F_CHUNKED)!=0;
-        keep_alive= (flags&F_CONNECTION_KEEP_ALIVE)!=0;
-        upgrade= (flags&F_CONNECTION_UPGRADE)!=0;
-
-        if(_http_protocol_callback)return _http_protocol_callback->on_http_protocol_headers_complete();
-
-        return true;
     }
 
     const char* http_protocol::find_header_value(const char* header)

@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include "string.hpp"
 #include "precompile.h"
 #include "allocator.hpp"

@@ -237,45 +237,45 @@ enum flags
   XX(OK, "success")                                                  \
                                                                      \
   /* Callback-related errors */                                      \
-  XX(CB_message_begin, "the on_message_begin callback failed")       \
-  XX(CB_url, "the on_url callback failed")                           \
-  XX(CB_header_field, "the on_header_field callback failed")         \
-  XX(CB_header_value, "the on_header_value callback failed")         \
-  XX(CB_headers_complete, "the on_headers_complete callback failed") \
-  XX(CB_body, "the on_body callback failed")                         \
-  XX(CB_message_complete, "the on_message_complete callback failed") \
-  XX(CB_status, "the on_status callback failed")                     \
-  XX(CB_chunk_header, "the on_chunk_header callback failed")         \
-  XX(CB_chunk_complete, "the on_chunk_complete callback failed")     \
+  XX(CB_message_begin, "[http]the on_message_begin callback failed")       \
+  XX(CB_url, "[http]the on_url callback failed")                           \
+  XX(CB_header_field, "[http]the on_header_field callback failed")         \
+  XX(CB_header_value, "[http]the on_header_value callback failed")         \
+  XX(CB_headers_complete, "[http]the on_headers_complete callback failed") \
+  XX(CB_body, "[http]the on_body callback failed")                         \
+  XX(CB_message_complete, "[http]the on_message_complete callback failed") \
+  XX(CB_status, "[http]the on_status callback failed")                     \
+  XX(CB_chunk_header, "[http]the on_chunk_header callback failed")         \
+  XX(CB_chunk_complete, "[http]the on_chunk_complete callback failed")     \
                                                                      \
   /* Parsing-related errors */                                       \
-  XX(INVALID_EOF_STATE, "stream ended at an unexpected time")        \
+  XX(INVALID_EOF_STATE, "[http]stream ended at an unexpected time")        \
   XX(HEADER_OVERFLOW,                                                \
-     "too many header bytes seen; overflow detected")                \
+     "[http]too many header bytes seen; overflow detected")                \
   XX(CLOSED_CONNECTION,                                              \
-     "data received after completed connection: close message")      \
-  XX(INVALID_VERSION, "invalid HTTP version")                        \
-  XX(INVALID_STATUS, "invalid HTTP status code")                     \
-  XX(INVALID_METHOD, "invalid HTTP method")                          \
-  XX(INVALID_URL, "invalid URL")                                     \
-  XX(INVALID_HOST, "invalid host")                                   \
-  XX(INVALID_PORT, "invalid port")                                   \
-  XX(INVALID_PATH, "invalid path")                                   \
-  XX(INVALID_QUERY_STRING, "invalid query string")                   \
-  XX(INVALID_FRAGMENT, "invalid fragment")                           \
-  XX(LF_EXPECTED, "LF character expected")                           \
-  XX(INVALID_HEADER_TOKEN, "invalid character in header")            \
+     "[http]data received after completed connection: close message")      \
+  XX(INVALID_VERSION, "[http]invalid HTTP version")                        \
+  XX(INVALID_STATUS, "[http]invalid HTTP status code")                     \
+  XX(INVALID_METHOD, "[http]invalid HTTP method")                          \
+  XX(INVALID_URL, "[http]invalid URL")                                     \
+  XX(INVALID_HOST, "[http]invalid host")                                   \
+  XX(INVALID_PORT, "[http]invalid port")                                   \
+  XX(INVALID_PATH, "[http]invalid path")                                   \
+  XX(INVALID_QUERY_STRING, "[http]invalid query string")                   \
+  XX(INVALID_FRAGMENT, "[http]invalid fragment")                           \
+  XX(LF_EXPECTED, "[http]LF character expected")                           \
+  XX(INVALID_HEADER_TOKEN, "[http]invalid character in header")            \
   XX(INVALID_CONTENT_LENGTH,                                         \
-     "invalid character in content-length header")                   \
+     "[http]invalid character in content-length header")                   \
   XX(UNEXPECTED_CONTENT_LENGTH,                                      \
-     "unexpected content-length header")                             \
+     "[http]unexpected content-length header")                             \
   XX(INVALID_CHUNK_SIZE,                                             \
-     "invalid character in chunk size header")                       \
-  XX(INVALID_CONSTANT, "invalid constant string")                    \
-  XX(INVALID_INTERNAL_STATE, "encountered unexpected internal state")\
-  XX(STRICT, "strict mode assertion failed")                         \
-  XX(PAUSED, "parser is paused")                                     \
-  XX(UNKNOWN, "an unknown error occurred")
+     "[http]invalid character in chunk size header")                       \
+  XX(INVALID_CONSTANT, "[http]invalid constant string")                    \
+  XX(INVALID_INTERNAL_STATE, "[http]encountered unexpected internal state")\
+  XX(STRICT, "[http]strict mode assertion failed")                         \
+  XX(PAUSED, "[http]parser is paused")                                     \
+  XX(UNKNOWN, "[http]an unknown error occurred")
 
 
 /* Define HPE_* values for each errno value above */

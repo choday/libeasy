@@ -13,7 +13,7 @@ namespace ehttp
 
     }
 
-    void http_request::add_header(const ebase::string& value)
+    bool http_request::add_header(const ebase::string& value)
     {
         if(0 == value.compare_size_ignore_case("cookie",6) )
         {
@@ -35,9 +35,12 @@ namespace ehttp
             host = http_protocol::find_header_value( value.c_str() );
         }else
         {
-            http_protocol::add_header(value);
+            return http_protocol::add_header(value);
         }
+        return true;
     }
+
+
 
     ebase::buffer http_request::make_buffer()
     {
@@ -78,7 +81,8 @@ namespace ehttp
         APPEND_BUFFER(accept_encoding,"Accept-Encoding");
 
         http_protocol::make_headers(buffer);
-        
+
+
         APPEND_BUFFER(referer,"Referer");
         APPEND_BUFFER(referer,"cookie");
         APPEND_BUFFER(user_agent,"User-Agent");
